@@ -38,8 +38,8 @@ Probe toutes les 30min (configurable)
 ### Linux (systemd)
 
 ```bash
-git clone <repo> c-ping
-cd c-ping
+git clone <repo> c-pinger
+cd c-pinger
 bash install/install_linux.sh
 ```
 
