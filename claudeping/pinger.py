@@ -8,7 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .detector import CLI_TIMEOUT, DetectorError, parse_quota_hit_from_output
+from .detector import CLI_TIMEOUT, DetectorError, run_usage_check
 from .logger import get_logger
 
 logger = get_logger()
@@ -73,7 +73,7 @@ def send_ping(model: str, message: str) -> PingResult:
     combined_output = result.stdout + "\n" + result.stderr
 
     # Vérifier si le quota est toujours actif (pas encore reset)
-    quota_info = parse_quota_hit_from_output(combined_output)
+    quota_info = run_usage_check()
     if quota_info.quota_hit:
         logger.warning(
             "Ping envoyé mais quota toujours actif",
