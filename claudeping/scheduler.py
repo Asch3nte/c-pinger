@@ -111,15 +111,16 @@ class Scheduler:
                 reset_local = result.reset_at.astimezone(tz).strftime("%d/%m %H:%M:%S")
                 logger.info(
                     f"Session active ({result.session_pct}% utilisé) — "
-                    f"prochain reset prévu à {reset_local}, ping schedulé."
+                    f"prochain reset à {reset_local}, ping schedulé."
                 )
                 self._schedule_ping(result.reset_at, source="intelligent", notify=False)
             else:
-                logger.debug(
+                tz = ZoneInfo(self.config.fallback.timezone)
+                reset_local = result.reset_at.astimezone(tz).strftime("%d/%m %H:%M:%S")
+                logger.info(                                          # info, pas debug
                     f"Session active ({result.session_pct}% utilisé) — "
-                    f"ping déjà schedulé au bon moment, rien à faire."
+                    f"prochain reset à {reset_local}, ping déjà schedulé au bon moment."
                 )
-            return
 
         # Pas de reset_at → session pas encore démarrée (compteur à 0)
         # On ping immédiatement pour démarrer le compteur.
