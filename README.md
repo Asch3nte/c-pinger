@@ -46,8 +46,8 @@ bash install/install_linux.sh
 ### Windows (Task Scheduler)
 
 ```powershell
-git clone <repo> c-ping
-cd c-ping
+git clone <repo> c-pinger
+cd c-pinger
 PowerShell -ExecutionPolicy Bypass -File install\install_windows.ps1
 ```
 
