@@ -107,9 +107,11 @@ class Scheduler:
             new_ping_at = result.reset_at + timedelta(seconds=30)
 
             if current is None or abs((new_ping_at - current).total_seconds()) > 120:
+                tz = ZoneInfo(self.config.fallback.timezone)
+                reset_local = result.reset_at.astimezone(tz).strftime("%d/%m %H:%M:%S")
                 logger.info(
                     f"Session active ({result.session_pct}% utilisé) — "
-                    f"reset détecté via /usage, reschedule."
+                    f"prochain reset prévu à {reset_local}, ping schedulé."
                 )
                 self._schedule_ping(result.reset_at, source="intelligent", notify=False)
             else:
