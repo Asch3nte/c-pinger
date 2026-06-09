@@ -1,6 +1,5 @@
 """
-Détection du quota atteint via l'output de Claude Code CLI.
-Parse l'heure de reset depuis le message de quota.
+Détection du quota et récupération de l'heure de reset via `claude -p "/usage"`.
 """
 
 from __future__ import annotations
@@ -8,138 +7,154 @@ from __future__ import annotations
 import re
 import subprocess
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
 from .logger import get_logger
 
 logger = get_logger()
 
-# Pattern du message de quota Claude Code :
-# "You've hit your session limit · resets 2:50pm (Europe/Brussels)"
-# Le séparateur peut être · (U+00B7) ou • (U+2022) ou un tiret
-QUOTA_PATTERN = re.compile(
-    r"you'?ve hit your session limit"
-    r"[\s\S]*?"                          # séparateur flexible
-    r"resets\s+(\d{1,2}:\d{2}(?:am|pm))"
-    r"\s+\(([^)]+)\)",
+CLI_TIMEOUT = 30
+
+# "resets Jun 10, 4:40am (Europe/Brussels)"  ← avec date
+# "resets 4:40am (Europe/Brussels)"           ← sans date (même jour)
+_RESET_WITH_DATE = re.compile(
+    r"resets\s+([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2}:\d{2}(?:am|pm))\s*\(([^)]+)\)",
+    re.IGNORECASE,
+)
+_RESET_TIME_ONLY = re.compile(
+    r"resets\s+(\d{1,2}:\d{2}(?:am|pm))\s*\(([^)]+)\)",
     re.IGNORECASE,
 )
 
-# Timeout pour l'appel CLI (secondes)
-CLI_TIMEOUT = 30
+# Quota 100% atteint — message probable (à ajuster si nécessaire)
+_QUOTA_HIT = re.compile(
+    r"you'?ve hit your (session|usage) limit",
+    re.IGNORECASE,
+)
+
+_MONTH_MAP = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4,
+    "may": 5, "jun": 6, "jul": 7, "aug": 8,
+    "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
 
 
 @dataclass
 class QuotaInfo:
-    """Résultat d'une détection de quota."""
+    """Résultat d'une interrogation /usage."""
     quota_hit: bool
-    reset_at: datetime | None = None      # datetime UTC si quota_hit=True
-    raw_message: str = ""
+    reset_at: datetime | None = None   # UTC
+    session_pct: int | None = None     # % utilisé (0-100)
+    raw_output: str = ""
 
 
 class DetectorError(Exception):
-    """Erreur lors de la détection (CLI non disponible, timeout, etc.)."""
+    """CLI inaccessible, timeout, etc."""
 
 
-def _parse_reset_time(time_str: str, tz_str: str) -> datetime:
-    """
-    Parse "2:50pm" + "Europe/Brussels" → datetime UTC du prochain reset.
-
-    La date n'est pas dans le message, on assume que le reset est
-    aujourd'hui ou demain (si l'heure est déjà passée).
-
-    Args:
-        time_str: Heure au format "H:MMam" ou "H:MMpm".
-        tz_str: Nom de timezone IANA (ex: "Europe/Brussels").
-
-    Returns:
-        datetime en UTC.
-
-    Raises:
-        ValueError: Si le parsing échoue.
-    """
-    tz = ZoneInfo(tz_str)
-    now_local = datetime.now(tz)
-
-    # Parse "2:50pm" → heure et minute
-    time_clean = time_str.lower().strip()
-    is_pm = time_clean.endswith("pm")
-    is_am = time_clean.endswith("am")
-    time_clean = time_clean.replace("am", "").replace("pm", "")
-    hour, minute = map(int, time_clean.split(":"))
-
+def _parse_time_str(time_str: str) -> tuple[int, int]:
+    """'4:40am' → (4, 40),  '2:00pm' → (14, 0)"""
+    t = time_str.lower().strip()
+    is_pm = t.endswith("pm")
+    is_am = t.endswith("am")
+    t = t.replace("am", "").replace("pm", "")
+    hour, minute = map(int, t.split(":"))
     if is_pm and hour != 12:
         hour += 12
     elif is_am and hour == 12:
         hour = 0
-
-    # Construire le datetime local pour aujourd'hui
-    reset_local = now_local.replace(
-        hour=hour,
-        minute=minute,
-        second=0,
-        microsecond=0,
-    )
-
-    # Si l'heure est déjà passée aujourd'hui → c'est demain
-    if reset_local <= now_local:
-        from datetime import timedelta
-        reset_local = reset_local + timedelta(days=1)
-
-    return reset_local.astimezone(timezone.utc)
+    return hour, minute
 
 
-def parse_quota_from_output(output: str) -> QuotaInfo:
-    """
-    Analyse l'output CLI pour détecter le message de quota.
+def _build_reset_datetime(hour: int, minute: int, month: int | None,
+                           day: int | None, tz: ZoneInfo) -> datetime:
+    """Construit le datetime UTC du reset."""
+    now = datetime.now(tz)
 
-    Args:
-        output: Contenu stdout + stderr de la commande claude.
+    if month is not None and day is not None:
+        # Date explicite dans le message
+        year = now.year
+        dt = datetime(year, month, day, hour, minute, tzinfo=tz)
+        # Si la date est déjà passée cette année → année suivante
+        if dt <= now:
+            dt = dt.replace(year=year + 1)
+    else:
+        # Pas de date → aujourd'hui ou demain
+        dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+        if dt <= now:
+            dt += timedelta(days=1)
 
-    Returns:
-        QuotaInfo avec quota_hit=True et reset_at parsé si quota détecté.
-    """
-    match = QUOTA_PATTERN.search(output)
-    if not match:
-        return QuotaInfo(quota_hit=False)
+    return dt.astimezone(timezone.utc)
 
-    time_str = match.group(1)   # ex: "2:50pm"
-    tz_str = match.group(2)     # ex: "Europe/Brussels"
 
-    try:
-        reset_at = _parse_reset_time(time_str, tz_str)
+def _parse_usage_output(output: str) -> QuotaInfo:
+    """Parse l'output de `claude -p "/usage"`."""
+
+    # Quota atteint ?
+    if _QUOTA_HIT.search(output):
+        logger.warning("Quota atteint détecté dans l'output.")
+        return QuotaInfo(quota_hit=True, raw_output=output)
+
+    # % de session utilisé
+    pct_match = re.search(r"Current session:\s*(\d+)%", output, re.IGNORECASE)
+    session_pct = int(pct_match.group(1)) if pct_match else None
+
+    # Heure de reset — format avec date en priorité
+    reset_at = None
+    m = _RESET_WITH_DATE.search(output)
+    if m:
+        month_str, day_str, time_str, tz_str = m.group(1), m.group(2), m.group(3), m.group(4)
+        try:
+            month = _MONTH_MAP[month_str[:3].lower()]
+            day = int(day_str)
+            hour, minute = _parse_time_str(time_str)
+            tz = ZoneInfo(tz_str)
+            reset_at = _build_reset_datetime(hour, minute, month, day, tz)
+        except Exception as e:
+            logger.warning(f"Parsing reset (avec date) échoué : {e}")
+    else:
+        m2 = _RESET_TIME_ONLY.search(output)
+        if m2:
+            time_str, tz_str = m2.group(1), m2.group(2)
+            try:
+                hour, minute = _parse_time_str(time_str)
+                tz = ZoneInfo(tz_str)
+                reset_at = _build_reset_datetime(hour, minute, None, None, tz)
+            except Exception as e:
+                logger.warning(f"Parsing reset (heure seule) échoué : {e}")
+
+    if reset_at:
         logger.info(
-            "Quota détecté",
+            "Reset détecté via /usage",
             extra={
                 "reset_at_utc": reset_at.isoformat(),
-                "reset_time_raw": time_str,
-                "reset_tz": tz_str,
+                "session_pct": session_pct,
             },
         )
-        return QuotaInfo(quota_hit=True, reset_at=reset_at, raw_message=match.group(0))
-    except (ValueError, KeyError) as e:
-        logger.warning(f"Quota détecté mais parsing de l'heure échoué : {e}")
-        return QuotaInfo(quota_hit=True, reset_at=None, raw_message=match.group(0))
+    else:
+        logger.warning("Impossible de parser l'heure de reset depuis /usage.")
+
+    return QuotaInfo(
+        quota_hit=False,
+        reset_at=reset_at,
+        session_pct=session_pct,
+        raw_output=output,
+    )
 
 
-def run_probe(model: str, message: str) -> QuotaInfo:
+def run_usage_check() -> QuotaInfo:
     """
-    Lance une commande probe Claude Code CLI et analyse le résultat.
-
-    Args:
-        model: Modèle à utiliser (ex: "haiku").
-        message: Message à envoyer.
+    Lance `claude -p "/usage"` et retourne l'état du quota.
 
     Returns:
-        QuotaInfo.
+        QuotaInfo avec reset_at en UTC si parsé.
 
     Raises:
-        DetectorError: Si le CLI est inaccessible ou timeout.
+        DetectorError: CLI inaccessible ou timeout.
     """
-    cmd = ["claude", "-p", message, "--model", model]
-
-    logger.debug(f"Probe CLI : {' '.join(cmd)}")
+    cmd = ["claude", "-p", "/usage"]
+    logger.debug(f"Usage check : {' '.join(cmd)}")
 
     try:
         result = subprocess.run(
@@ -151,26 +166,22 @@ def run_probe(model: str, message: str) -> QuotaInfo:
             errors="replace",
         )
     except FileNotFoundError:
-        raise DetectorError(
-            "Claude Code CLI introuvable. "
-            "Vérifiez que 'claude' est installé et dans le PATH."
-        )
+        raise DetectorError("Claude Code CLI introuvable (claude absent du PATH).")
     except subprocess.TimeoutExpired:
-        raise DetectorError(f"Timeout après {CLI_TIMEOUT}s lors du probe CLI.")
+        raise DetectorError(f"Timeout après {CLI_TIMEOUT}s.")
     except OSError as e:
-        raise DetectorError(f"Erreur OS lors du probe : {e}")
+        raise DetectorError(f"Erreur OS : {e}")
 
-    # On analyse stdout + stderr combinés car Claude Code
-    # peut écrire dans l'un ou l'autre selon la version
-    combined_output = result.stdout + "\n" + result.stderr
-
+    combined = result.stdout + "\n" + result.stderr
     logger.debug(
-        "Résultat probe",
-        extra={
-            "returncode": result.returncode,
-            "stdout_len": len(result.stdout),
-            "stderr_len": len(result.stderr),
-        },
+        "Output /usage",
+        extra={"returncode": result.returncode, "output": combined[:500]},
     )
 
-    return parse_quota_from_output(combined_output)
+    return _parse_usage_output(combined)
+
+
+# Rétrocompatibilité : run_probe redirige vers run_usage_check
+def run_probe(model: str = "", message: str = "") -> QuotaInfo:
+    """Alias déprécié → run_usage_check."""
+    return run_usage_check()
