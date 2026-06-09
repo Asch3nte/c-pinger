@@ -121,6 +121,7 @@ class Scheduler:
                     f"Session active ({result.session_pct}% utilisé) — "
                     f"prochain reset à {reset_local}, ping déjà schedulé au bon moment."
                 )
+            return
 
         # Pas de reset_at → session pas encore démarrée (compteur à 0)
         # On ping immédiatement pour démarrer le compteur.
