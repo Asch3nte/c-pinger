@@ -8,7 +8,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from .detector import CLI_TIMEOUT, DetectorError, run_usage_check
+from .detector import CLI_TIMEOUT, parse_usage_output
 from .logger import get_logger
 
 logger = get_logger()
@@ -16,33 +16,14 @@ logger = get_logger()
 
 @dataclass
 class PingResult:
-    """Résultat d'un ping."""
     success: bool
     sent_at: datetime
     response: str = ""
     error: str = ""
-    quota_still_active: bool = False   # True si le quota n'est pas encore reset
-
-
-class PingerError(Exception):
-    """Erreur lors du ping."""
+    quota_still_active: bool = False
 
 
 def send_ping(model: str, message: str) -> PingResult:
-    """
-    Envoie le ping via Claude Code CLI.
-
-    Gère le cas où le quota n'est pas encore levé au moment du ping
-    (ex: reset prévu à 14:50 mais on ping à 14:50:02 et le serveur
-    n'est pas encore reset).
-
-    Args:
-        model: Modèle Claude à utiliser.
-        message: Message du ping.
-
-    Returns:
-        PingResult.
-    """
     cmd = ["claude", "-p", message, "--model", model]
     sent_at = datetime.now(timezone.utc)
 
@@ -72,8 +53,8 @@ def send_ping(model: str, message: str) -> PingResult:
 
     combined_output = result.stdout + "\n" + result.stderr
 
-    # Vérifier si le quota est toujours actif (pas encore reset)
-    quota_info = run_usage_check()
+    # Parser directement l'output du ping — pas de second appel CLI
+    quota_info = parse_usage_output(combined_output)
     if quota_info.quota_hit:
         logger.warning(
             "Ping envoyé mais quota toujours actif",
@@ -92,8 +73,5 @@ def send_ping(model: str, message: str) -> PingResult:
         return PingResult(success=False, sent_at=sent_at, error=error_msg)
 
     response = result.stdout.strip()
-    logger.info(
-        "Ping réussi",
-        extra={"response": response[:100], "returncode": result.returncode},
-    )
+    logger.info("Ping réussi", extra={"response": response[:100], "returncode": result.returncode})
     return PingResult(success=True, sent_at=sent_at, response=response)

@@ -88,7 +88,7 @@ def _build_reset_datetime(hour: int, minute: int, month: int | None,
     return dt.astimezone(timezone.utc)
 
 
-def _parse_usage_output(output: str) -> QuotaInfo:
+def parse_usage_output(output: str) -> QuotaInfo:
     """Parse l'output de `claude -p "/usage"`."""
 
     # Quota atteint ?
@@ -178,7 +178,7 @@ def run_usage_check() -> QuotaInfo:
         extra={"returncode": result.returncode, "output": combined[:500]},
     )
 
-    return _parse_usage_output(combined)
+    return parse_usage_output(combined)
 
 
 # Rétrocompatibilité : run_probe redirige vers run_usage_check
