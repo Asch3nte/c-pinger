@@ -130,7 +130,7 @@ class Scheduler:
     # Scheduling
     # ------------------------------------------------------------------
 
-    def _schedule_ping(self, reset_at: datetime, source: str) -> None:
+    def _schedule_ping(self, reset_at: datetime, source: str, notify: bool = True) -> None:
         """
         Schedule le ping à l'heure de reset.
 
@@ -162,7 +162,8 @@ class Scheduler:
             extra={"ping_at_utc": ping_at.isoformat(), "ping_at_local": ping_at_local},
         )
 
-        if self.config.notifications.enabled and self.config.notifications.on_quota_detected:
+
+        if notify and self.config.notifications.enabled and self.config.notifications.on_quota_detected:
             notify_quota_detected(ping_at_local)
 
     def _schedule_fallback(self) -> None:
@@ -178,7 +179,7 @@ class Scheduler:
             fallback_local += timedelta(days=1)
 
         fallback_utc = fallback_local.astimezone(timezone.utc)
-        self._schedule_ping(fallback_utc, source="fallback")
+        self._schedule_ping(fallback_utc, source="fallback", notify=False)  # ← notify=False
 
     # ------------------------------------------------------------------
     # Ping
