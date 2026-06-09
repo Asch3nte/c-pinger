@@ -38,16 +38,16 @@ Probe toutes les 30min (configurable)
 ### Linux (systemd)
 
 ```bash
-git clone <repo> claudeping
-cd claudeping
+git clone <repo> c-ping
+cd c-ping
 bash install/install_linux.sh
 ```
 
 ### Windows (Task Scheduler)
 
 ```powershell
-git clone <repo> claudeping
-cd claudeping
+git clone <repo> c-ping
+cd c-ping
 PowerShell -ExecutionPolicy Bypass -File install\install_windows.ps1
 ```
 
@@ -86,10 +86,10 @@ python main.py ping-now
 
 ```
 ╭─────────────────────────────────────────────────────╮
-│              ClaudePing — Dashboard                  │
+│              ClaudePing — Dashboard                 │
 ├─────────────────────────────────────────────────────┤
 │  Heure locale    : 2025-01-13 14:30:00 CET          │
-│  Mode            : Intelligent + Fallback            │
+│  Mode            : Intelligent + Fallback           │
 │  Probe interval  : 30 min                           │
 ├─────────────────────────────────────────────────────┤
 │  Prochain ping   : 2025-01-13 14:50:30 CET          │
