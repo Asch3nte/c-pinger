@@ -46,7 +46,7 @@ def send_ping(model: str, message: str) -> PingResult:
     cmd = ["claude", "-p", message, "--model", model]
     sent_at = datetime.now(timezone.utc)
 
-    logger.info("Envoi du ping", extra={"model": model, "message": message})
+    logger.info("Envoi du ping", extra={"ping_model": model, "ping_message": message})
 
     try:
         result = subprocess.run(

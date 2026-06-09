@@ -200,7 +200,7 @@ class Scheduler:
                 sent_local = result.sent_at.astimezone(tz).strftime("%H:%M:%S")
                 logger.info(
                     "Ping réussi — compteur 5h démarré",
-                    extra={"sent_at_local": sent_local, "response": result.response},
+                    extra={"sent_at_local": sent_local, "ping_response": result.response},
                 )
                 if self.config.notifications.enabled and self.config.notifications.on_ping_sent:
                     notify_ping_sent(sent_local, result.response)
