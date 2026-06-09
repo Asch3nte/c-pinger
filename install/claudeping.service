@@ -1,0 +1,26 @@
+# Systemd user service pour ClaudePing
+# Installation :
+#   mkdir -p ~/.config/systemd/user/
+#   cp claudeping.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now claudeping
+
+[Unit]
+Description=ClaudePing — Démarrage automatique du compteur de quota Claude Pro
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/claudeping
+ExecStart=/usr/bin/python3 %h/claudeping/main.py
+Restart=on-failure
+RestartSec=60
+StandardOutput=journal
+StandardError=journal
+
+# Variables d'environnement (PATH pour trouver 'claude')
+Environment="PATH=/usr/local/bin:/usr/bin:/bin:%h/.local/bin:%h/.npm-global/bin"
+
+[Install]
+WantedBy=default.target

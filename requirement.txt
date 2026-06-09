@@ -1,0 +1,5 @@
+pyyaml>=6.0
+plyer>=2.1.0
+# zoneinfo est inclus dans Python 3.9+
+# Pour Python < 3.9 : tzdata
+tzdata>=2024.1   # Données timezone pour Windows (zoneinfo le nécessite)
