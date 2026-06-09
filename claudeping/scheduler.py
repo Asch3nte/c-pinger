@@ -111,7 +111,7 @@ class Scheduler:
                     f"Session active ({result.session_pct}% utilisé) — "
                     f"reset détecté via /usage, reschedule."
                 )
-                self._schedule_ping(result.reset_at, source="intelligent")
+                self._schedule_ping(result.reset_at, source="intelligent", notify=False)
             else:
                 logger.debug(
                     f"Session active ({result.session_pct}% utilisé) — "
