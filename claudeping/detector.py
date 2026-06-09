@@ -3,7 +3,7 @@ Détection du quota et récupération de l'heure de reset via `claude -p "/usage
 """
 
 from __future__ import annotations
-
+import json
 import re
 import subprocess
 from dataclasses import dataclass
@@ -153,7 +153,7 @@ def run_usage_check() -> QuotaInfo:
     Raises:
         DetectorError: CLI inaccessible ou timeout.
     """
-    cmd = ["claude", "-p", "/usage"]
+    cmd = ["claude", "-p", "/usage", "--output-format", "json"]
     logger.debug(f"Usage check : {' '.join(cmd)}")
 
     try:
@@ -166,19 +166,29 @@ def run_usage_check() -> QuotaInfo:
             errors="replace",
         )
     except FileNotFoundError:
-        raise DetectorError("Claude Code CLI introuvable (claude absent du PATH).")
+        raise DetectorError("Claude Code CLI introuvable.")
     except subprocess.TimeoutExpired:
         raise DetectorError(f"Timeout après {CLI_TIMEOUT}s.")
     except OSError as e:
         raise DetectorError(f"Erreur OS : {e}")
 
-    combined = result.stdout + "\n" + result.stderr
-    logger.debug(
-        "Output /usage",
-        extra={"returncode": result.returncode, "output": combined[:500]},
-    )
+    # Parser le JSON
+    try:
+        data = json.loads(result.stdout)
+        text_output = data.get("result", "")
+    except (json.JSONDecodeError, AttributeError):
+        # Fallback sur stdout brut si JSON invalide
+        logger.warning("JSON invalide, fallback sur stdout brut.")
+        text_output = result.stdout
 
-    return parse_usage_output(combined)
+    logger.debug("Output /usage", extra={"output": text_output[:500]})
+
+    # Pas de session active : result vide ou sans "Current session:"
+    if not re.search(r"Current session:", text_output, re.IGNORECASE):
+        logger.info("Pas de session active (aucun compteur démarré).")
+        return QuotaInfo(quota_hit=False, reset_at=None, session_pct=0, raw_output=text_output)
+
+    return parse_usage_output(text_output)
 
 
 # Rétrocompatibilité : run_probe redirige vers run_usage_check
