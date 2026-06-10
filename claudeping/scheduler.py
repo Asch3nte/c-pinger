@@ -53,6 +53,8 @@ class Scheduler:
             else:
                 self._do_probe()
 
+            # ← Relire APRÈS probe (qui peut avoir modifié le schedule)
+            ping_scheduled_at = self.state.get_ping_scheduled_at()
             sleep_seconds = self._compute_sleep(ping_scheduled_at)
             logger.debug(f"Sleep {sleep_seconds:.0f}s avant prochaine action.")
             self._interruptible_sleep(sleep_seconds)
@@ -72,6 +74,13 @@ class Scheduler:
                 self._schedule_fallback()
 
     def _do_probe(self) -> None:
+        # Si un ping est schedulé dans moins de 60s, ne pas sonder
+        scheduled = self.state.get_ping_scheduled_at()
+        if scheduled is not None:
+            seconds_until = (scheduled - datetime.now(timezone.utc)).total_seconds()
+            if seconds_until < 60:
+                logger.debug("Ping imminent, probe ignoré.")
+                return
         try:
             self._handle_probe_result(run_usage_check())
         except DetectorError as e:
@@ -126,8 +135,11 @@ class Scheduler:
         # Pas de reset_at → session pas encore démarrée (compteur à 0)
         # On ping immédiatement pour démarrer le compteur.
         logger.info("Aucune session active détectée → ping immédiat pour démarrer le compteur.")
-        ping_now = datetime.now(timezone.utc) + timedelta(seconds=5)
-        self.state.set_ping_scheduled_at(ping_now)
+        current = self.state.get_ping_scheduled_at()
+        now = datetime.now(timezone.utc)
+        if current is None or (current - now).total_seconds() > 60:
+            ping_now = now + timedelta(seconds=5)
+            self.state.set_ping_scheduled_at(ping_now)
 
     # ------------------------------------------------------------------
     # Scheduling
