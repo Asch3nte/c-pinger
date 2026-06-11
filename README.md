@@ -38,7 +38,7 @@ Probe toutes les 30min (configurable)
 ### Linux (systemd)
 
 ```bash
-git clone https://github.com/Asch3nte/c-pinger.git c-pinger
+git clone https://github.com/Asch3nte/c-pinger.git claudeping
 cd c-pinger
 bash install/install_linux.sh
 ```
@@ -46,7 +46,7 @@ bash install/install_linux.sh
 ### Windows (Task Scheduler)
 
 ```powershell
-git clone https://github.com/Asch3nte/c-pinger.git c-pinger
+git clone https://github.com/Asch3nte/c-pinger.git claudeping
 cd c-pinger
 PowerShell -ExecutionPolicy Bypass -File install\install_windows.ps1
 ```
