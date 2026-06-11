@@ -24,8 +24,42 @@ if (-not $PythonExe) {
 
 $ClaudeCmd = Get-Command claude -ErrorAction SilentlyContinue
 $ClaudeExe = if ($ClaudeCmd) { $ClaudeCmd.Source } else { $null }
+
 if (-not $ClaudeExe) {
-    Write-Warning "'claude' non trouvé dans PATH. Assurez-vous que Claude Code est installé."
+    Write-Host "-> 'claude' non trouvé dans PATH, recherche automatique..." -ForegroundColor Yellow
+
+    $SearchPaths = @(
+        "$env:LOCALAPPDATA\Packages",
+        "$env:USERPROFILE\.vscode\extensions"
+    )
+
+    # Chercher tous les claude.exe, exclure les extensions VSCode (binaires de secours)
+    $Found = Get-ChildItem -Path $SearchPaths -Filter "claude.exe" -Recurse -ErrorAction SilentlyContinue |
+             Where-Object { $_.FullName -notlike "*\.vscode\*" } |
+             # Prendre la version la plus récente si plusieurs
+             Sort-Object { $_.FullName } -Descending |
+             Select-Object -First 1
+
+    if ($Found) {
+        $ClaudeExe = $Found.FullName
+        Write-Host "-> Claude trouvé : $ClaudeExe" -ForegroundColor Green
+
+        # Ajouter le dossier au PATH utilisateur pour les prochaines sessions
+        $ClaudeDir = Split-Path -Parent $ClaudeExe
+        $CurrentUserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+        if ($CurrentUserPath -notlike "*$ClaudeDir*") {
+            [Environment]::SetEnvironmentVariable("PATH", "$CurrentUserPath;$ClaudeDir", "User")
+            Write-Host "-> Dossier ajouté au PATH utilisateur : $ClaudeDir" -ForegroundColor Green
+            Write-Host "   (Redémarrez PowerShell pour que 'claude' soit disponible globalement)" -ForegroundColor Gray
+        }
+    } else {
+        Write-Warning "Claude Code introuvable. Le ping ne fonctionnera pas sans lui."
+        Write-Warning "Installez Claude Code depuis : https://claude.ai/download"
+    }
+}
+
+if ($ClaudeExe) {
+    Write-Host "-> Claude utilisé : $ClaudeExe" -ForegroundColor Green
 }
 
 # 2. Copie des fichiers
@@ -37,6 +71,17 @@ Copy-Item -Path "$ProjectDir\*" -Destination $InstallDir -Recurse -Force
 if (-not (Test-Path "$InstallDir\config.yaml")) {
     Copy-Item "$InstallDir\config.yaml.example" "$InstallDir\config.yaml"
     Write-Host "-> config.yaml créé. Éditez $InstallDir\config.yaml." -ForegroundColor Yellow
+}
+
+# Injecter le chemin claude dans config.yaml si trouvé et pas déjà présent
+if ($ClaudeExe -and (Test-Path "$InstallDir\config.yaml")) {
+    $ConfigContent = Get-Content "$InstallDir\config.yaml" -Raw
+    # Échapper les backslashes pour YAML
+    $ClaudeExeYaml = $ClaudeExe.Replace("\", "\\")
+    if ($ConfigContent -notmatch "claude_executable:") {
+        Add-Content "$InstallDir\config.yaml" "`nclaude_executable: `"$ClaudeExeYaml`""
+        Write-Host "-> Chemin claude injecté dans config.yaml" -ForegroundColor Green
+    }
 }
 
 # 4. Dépendances Python
