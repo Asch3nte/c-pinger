@@ -64,14 +64,16 @@ $Principal = New-ScheduledTaskPrincipal `
     -LogonType Interactive `
     -RunLevel Limited
 
-Register-ScheduledTask `
-    -TaskName $TaskName `
-    -Action $Action `
-    -Trigger $Trigger `
-    -Settings $Settings `
-    -Principal $Principal `
-    -Description "ClaudePing — Démarrage automatique du compteur de quota Claude Pro" `
-    -Force | Out-Null
+$TaskParams = @{
+    TaskName    = $TaskName
+    Action      = $Action
+    Trigger     = $Trigger
+    Settings    = $Settings
+    Principal   = $Principal
+    Description = "ClaudePing - Demarrage automatique du compteur de quota Claude Pro"
+    Force       = $true
+}
+Register-ScheduledTask @TaskParams | Out-Null
 
 # Démarrage immédiat
 Start-ScheduledTask -TaskName $TaskName
