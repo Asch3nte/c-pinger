@@ -104,10 +104,11 @@ python main.py ping-now
 Les logs sont en JSON Lines dans `claudeping.log` avec rotation automatique.
 
 ```bash
-# Linux : suivre les logs en temps réel
+# Suivre les logs en temps réel :
+# Linux
 journalctl --user -u claudeping -f
 
-# Windows : suivre les logs en temps réel
+# Windows
 Get-Content "$env:USERPROFILE\claudeping\claudeping.log" -Wait -Tail 50
 
 # Ou directement
