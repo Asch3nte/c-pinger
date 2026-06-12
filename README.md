@@ -39,15 +39,15 @@ Probe toutes les 30min (configurable)
 
 ```bash
 git clone https://github.com/Asch3nte/c-pinger.git claudeping
-cd c-pinger
+cd claudeping
 bash install/install_linux.sh
 ```
 
-### Windows (Task Scheduler)
+### Windows (Task Scheduler) (/!\ 1 ligne à la fois /!\)
 
 ```powershell
 git clone https://github.com/Asch3nte/c-pinger.git claudeping
-cd c-pinger
+cd claudeping
 PowerShell -ExecutionPolicy Bypass -File install\install_windows.ps1
 ```
 
@@ -106,6 +106,9 @@ Les logs sont en JSON Lines dans `claudeping.log` avec rotation automatique.
 ```bash
 # Linux : suivre les logs en temps réel
 journalctl --user -u claudeping -f
+
+# Windows : suivre les logs en temps réel
+Get-Content "$env:USERPROFILE\claudeping\claudeping.log" -Wait -Tail 50
 
 # Ou directement
 tail -f claudeping.log | python3 -c "import sys,json; [print(json.dumps(json.loads(l), indent=2)) for l in sys.stdin]"
