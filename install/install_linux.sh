@@ -22,20 +22,33 @@ cp -r "$PROJECT_DIR"/* "$INSTALL_DIR/"
 
 # 3. Config
 if [ ! -f "$INSTALL_DIR/config.yaml" ]; then
-    cp "$INSTALL_DIR/config.yaml.example" "$INSTALL_DIR/config.yaml"
-    echo "→ config.yaml créé depuis l'exemple. Éditez $INSTALL_DIR/config.yaml selon vos besoins."
+    if [ -f "$INSTALL_DIR/config.yaml.example" ]; then
+        cp "$INSTALL_DIR/config.yaml.example" "$INSTALL_DIR/config.yaml"
+        echo "→ config.yaml créé depuis l'exemple. Éditez $INSTALL_DIR/config.yaml selon vos besoins."
+    elif [ -f "$INSTALL_DIR/config.yaml" ]; then
+        echo "→ config.yaml déjà présent dans le dossier d'installation."
+    else
+        echo "⚠️ Aucun fichier config.yaml ou config.yaml.example trouvé dans le projet."
+    fi
 fi
 
 # 4. Dépendances Python
-echo "→ Installation des dépendances Python..."
-pip3 install --user -r "$INSTALL_DIR/requirements.txt"
+VENV_DIR="$INSTALL_DIR/.venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "→ Création d'un environnement virtuel Python..."
+    python3 -m venv "$VENV_DIR"
+fi
+
+echo "→ Installation des dépendances Python dans le virtualenv..."
+"$VENV_DIR/bin/python" -m pip install --upgrade pip >/dev/null
+"$VENV_DIR/bin/python" -m pip install -r "$INSTALL_DIR/requirements.txt"
 
 # 5. Service systemd
 echo "→ Installation du service systemd..."
 mkdir -p "$HOME/.config/systemd/user/"
 
-# Mise à jour du WorkingDirectory dans le service
-sed "s|%h/claudeping|$INSTALL_DIR|g" "$SCRIPT_DIR/claudeping.service" > "$SERVICE_FILE"
+# Mise à jour du WorkingDirectory et de l'interpréteur Python dans le service
+sed "s|WorkingDirectory=%h/claudeping|WorkingDirectory=$INSTALL_DIR|g; s|ExecStart=/usr/bin/python3 %h/claudeping/main.py|ExecStart=$VENV_DIR/bin/python $INSTALL_DIR/main.py|g" "$SCRIPT_DIR/claudeping.service" > "$SERVICE_FILE"
 
 systemctl --user daemon-reload
 systemctl --user enable claudeping

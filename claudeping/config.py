@@ -5,13 +5,16 @@ Valide les champs obligatoires et fournit des valeurs par défaut.
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-import yaml
+yaml = None
+try:
+    import yaml
+except ImportError:
+    pass
 
 
 DEFAULT_CONFIG_PATH = Path("config.yaml")
@@ -60,6 +63,7 @@ class AppConfig:
     fallback: FallbackConfig = field(default_factory=FallbackConfig)
     notifications: NotificationsConfig = field(default_factory=NotificationsConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    claude_executable: str = "claude"
 
 
 class ConfigError(Exception):
@@ -89,17 +93,6 @@ def _validate_timezone(tz: str) -> None:
         raise ConfigError(f"Timezone invalide : '{tz}'")
 
 
-def _merge(base: dict, override: dict) -> dict:
-    """Merge récursif de deux dicts (override écrase base)."""
-    result = dict(base)
-    for key, val in override.items():
-        if isinstance(val, dict) and isinstance(result.get(key), dict):
-            result[key] = _merge(result[key], val)
-        else:
-            result[key] = val
-    return result
-
-
 def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
     """
     Charge et valide la configuration depuis un fichier YAML.
@@ -119,6 +112,12 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
         raise ConfigError(
             f"Fichier de configuration introuvable : {config_path}\n"
             f"Copiez config.yaml.example vers config.yaml et adaptez-le."
+        )
+
+    if yaml is None:
+        raise ConfigError(
+            "Le module PyYAML n'est pas installé. "
+            "Installez les dépendances : python3 -m pip install -r requirements.txt"
         )
 
     try:
@@ -169,6 +168,8 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
             backup_count=int(log_raw.get("backup_count", 3)),
         )
 
+        claude_executable = str(raw.get("claude_executable", "claude"))
+
     except (TypeError, ValueError) as e:
         raise ConfigError(f"Valeur de configuration invalide : {e}")
 
@@ -185,4 +186,49 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> AppConfig:
         fallback=fallback,
         notifications=notifications,
         logging=logging_cfg,
+        claude_executable=claude_executable,
     )
+
+
+def save_config(config: AppConfig, path: str | Path = DEFAULT_CONFIG_PATH) -> None:
+    """Sauvegarde la configuration dans un fichier YAML."""
+    if yaml is None:
+        raise ConfigError(
+            "Le module PyYAML n'est pas installé. "
+            "Installez les dépendances : python3 -m pip install -r requirements.txt"
+        )
+
+    data = {
+        "probe": {
+            "interval_minutes": config.probe.interval_minutes,
+            "model": config.probe.model,
+            "message": config.probe.message,
+        },
+        "ping": {
+            "message": config.ping.message,
+            "model": config.ping.model,
+        },
+        "fallback": {
+            "enabled": config.fallback.enabled,
+            "time": config.fallback.time,
+            "timezone": config.fallback.timezone,
+        },
+        "notifications": {
+            "enabled": config.notifications.enabled,
+            "on_quota_detected": config.notifications.on_quota_detected,
+            "on_ping_sent": config.notifications.on_ping_sent,
+            "on_error": config.notifications.on_error,
+        },
+        "logging": {
+            "level": config.logging.level,
+            "file": config.logging.file,
+            "max_bytes": config.logging.max_bytes,
+            "backup_count": config.logging.backup_count,
+        },
+        "claude_executable": config.claude_executable,
+    }
+
+    config_path = Path(path)
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(config_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(data, f, sort_keys=False, allow_unicode=True)

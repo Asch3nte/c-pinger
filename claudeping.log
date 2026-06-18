@@ -1,0 +1,297 @@
+{"ts": "2026-06-18T00:25:31.268579+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing démarré en mode service."}
+{"ts": "2026-06-18T00:25:31.269441+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T00:25:31.269522+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T00:25:31.269835+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe initial échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:25:31.270046+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (fallback)", "ping_at_utc": "2026-06-18T05:00:30+00:00", "ping_at_local": "07:00:30"}
+{"ts": "2026-06-18T00:25:31.270289+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:27:26.782800+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:27:26.937948+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:27:27.291467+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing arrêté."}
+{"ts": "2026-06-18T00:27:31.855169+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing démarré en mode service."}
+{"ts": "2026-06-18T00:27:31.855892+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T00:27:31.855980+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T00:27:31.856394+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe initial échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:27:31.856514+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping déjà schedulé au même moment (fallback) — aucun changement.", "ping_at_utc": "2026-06-18T05:00:30+00:00"}
+{"ts": "2026-06-18T00:27:31.856852+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:27:34.940666+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:27:35.122882+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:27:35.554229+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:27:35.857970+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing arrêté."}
+{"ts": "2026-06-18T00:27:41.646690+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing démarré en mode service."}
+{"ts": "2026-06-18T00:27:41.647464+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T00:27:41.647543+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T00:27:41.647978+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe initial échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:27:41.648088+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping déjà schedulé au même moment (fallback) — aucun changement.", "ping_at_utc": "2026-06-18T05:00:30+00:00"}
+{"ts": "2026-06-18T00:27:41.648453+00:00", "level": "WARNING", "module": "scheduler", "msg": "Probe échoué : Claude Code CLI introuvable."}
+{"ts": "2026-06-18T00:29:03.366251+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:29:03.663156+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing arrêté."}
+{"ts": "2026-06-18T00:30:43.689694+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing démarré en mode service."}
+{"ts": "2026-06-18T00:30:43.690398+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T00:30:43.690480+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T00:30:44.512325+00:00", "level": "INFO", "module": "detector", "msg": "Pas de session active (aucun compteur démarré)."}
+{"ts": "2026-06-18T00:30:44.512454+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T00:30:49.514012+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T00:30:49.514295+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T00:30:50.364682+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T00:30:50.364799+00:00", "level": "ERROR", "module": "pinger", "msg": "CLI retourné code 1 : "}
+{"ts": "2026-06-18T00:30:50.364870+00:00", "level": "ERROR", "module": "scheduler", "msg": "Ping échoué après 5 tentatives : CLI retourné code 1 : "}
+{"ts": "2026-06-18T00:32:47.742094+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T00:32:48.384034+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing arrêté."}
+{"ts": "2026-06-18T00:32:49.942440+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing démarré en mode service."}
+{"ts": "2026-06-18T00:32:49.943163+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T00:32:49.943261+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T00:32:51.336976+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T01:49:00+00:00", "session_pct": 99}
+{"ts": "2026-06-18T00:32:51.337218+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (99% utilisé) — prochain reset à 18/06 03:49:00, ping schedulé."}
+{"ts": "2026-06-18T00:32:51.337684+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T01:49:30+00:00", "ping_at_local": "03:49:30"}
+{"ts": "2026-06-18T00:32:52.904294+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T01:50:00+00:00", "session_pct": 99}
+{"ts": "2026-06-18T00:32:52.904455+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (99% utilisé) — prochain reset à 18/06 03:50:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T01:02:54.689266+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T01:50:00+00:00", "session_pct": 99}
+{"ts": "2026-06-18T01:02:54.689407+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (99% utilisé) — prochain reset à 18/06 03:50:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T01:32:56.625620+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T01:50:00+00:00", "session_pct": 99}
+{"ts": "2026-06-18T01:32:56.625803+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (99% utilisé) — prochain reset à 18/06 03:50:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T01:49:30.835074+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T01:49:30.835420+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T01:49:34.778773+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T01:49:34.778904+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T01:49:34.778986+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "03:49:30", "ping_response": "ok"}
+{"ts": "2026-06-18T01:49:34.787103+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T01:49:46.211075+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2027-06-18T01:49:00+00:00", "session_pct": 99}
+{"ts": "2026-06-18T01:49:46.211410+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2027-06-18T01:49:30+00:00", "ping_at_local": "03:49:30"}
+{"ts": "2026-06-18T02:19:48.601680+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-22T11:59:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T02:19:48.601816+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 22/06 13:59:00, ping schedulé."}
+{"ts": "2026-06-18T02:19:48.606785+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-22T11:59:30+00:00", "ping_at_local": "13:59:30"}
+{"ts": "2026-06-18T02:49:50.533103+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-22T11:59:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T02:49:50.533241+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 22/06 13:59:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T03:19:52.346674+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-22T11:59:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T03:19:52.346834+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 22/06 13:59:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T03:49:54.059990+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-22T11:59:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T03:49:54.060124+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 22/06 13:59:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T04:19:56.468403+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T04:19:56.468521+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T04:20:01.470309+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T04:20:01.470639+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T04:20:05.476979+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T04:20:05.477113+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T04:20:05.477209+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "06:20:01", "ping_response": "ok"}
+{"ts": "2026-06-18T04:20:05.485269+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T04:20:16.855980+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T04:20:16.856429+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T09:20:30+00:00", "ping_at_local": "11:20:30"}
+{"ts": "2026-06-18T04:50:18.711255+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T04:50:18.711393+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T05:20:20.942769+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T05:20:20.942915+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T05:50:22.985840+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T05:50:22.985989+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T06:20:24.785082+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T06:20:24.785234+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T06:50:27.171944+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:19:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T06:50:27.172091+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T07:20:29.723009+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T07:20:29.723149+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T07:50:31.518035+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T07:50:31.518180+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T08:20:33.505642+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T08:20:33.505823+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 11:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T08:50:35.515981+00:00", "level": "INFO", "module": "detector", "msg": "Pas de session active (aucun compteur démarré)."}
+{"ts": "2026-06-18T08:50:35.516095+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T08:50:40.517971+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T08:50:40.518272+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T08:50:43.927084+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T08:50:43.927218+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T08:50:43.927309+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "10:50:40", "ping_response": "ok"}
+{"ts": "2026-06-18T08:50:43.935591+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T08:50:55.551270+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T09:19:00+00:00", "session_pct": 4}
+{"ts": "2026-06-18T08:50:55.551595+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T09:19:30+00:00", "ping_at_local": "11:19:30"}
+{"ts": "2026-06-18T09:19:30.922668+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T09:19:30.922979+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T09:19:34.306335+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T09:19:34.306450+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T09:19:34.306533+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "11:19:30", "ping_response": "ok"}
+{"ts": "2026-06-18T09:19:34.314699+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T09:19:45.774024+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2027-06-18T09:19:00+00:00", "session_pct": 4}
+{"ts": "2026-06-18T09:19:45.774337+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2027-06-18T09:19:30+00:00", "ping_at_local": "11:19:30"}
+{"ts": "2026-06-18T09:49:47.710727+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T09:49:47.711168+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (0% utilisé) — prochain reset à 18/06 16:20:00, ping schedulé."}
+{"ts": "2026-06-18T09:49:47.712042+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T14:20:30+00:00", "ping_at_local": "16:20:30"}
+{"ts": "2026-06-18T10:19:53.092820+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:19:00+00:00", "session_pct": 8}
+{"ts": "2026-06-18T10:19:53.092945+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (8% utilisé) — prochain reset à 18/06 16:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T10:50:03.353457+00:00", "level": "INFO", "module": "detector", "msg": "Pas de session active (aucun compteur démarré)."}
+{"ts": "2026-06-18T10:50:03.353561+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T10:50:08.355337+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T10:50:08.355636+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T10:50:34.269298+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T10:50:34.269447+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T10:50:34.269558+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "12:50:08", "ping_response": "ok"}
+{"ts": "2026-06-18T10:50:34.277848+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T10:50:50.158121+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 18}
+{"ts": "2026-06-18T10:50:50.158480+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T14:20:30+00:00", "ping_at_local": "16:20:30"}
+{"ts": "2026-06-18T11:20:52.021186+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T11:20:52.021330+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 16:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T11:50:53.809766+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 59}
+{"ts": "2026-06-18T11:50:53.809923+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (59% utilisé) — prochain reset à 18/06 16:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T12:20:55.745237+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 77}
+{"ts": "2026-06-18T12:20:55.745411+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (77% utilisé) — prochain reset à 18/06 16:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T12:50:58.297737+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 78}
+{"ts": "2026-06-18T12:50:58.297904+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (78% utilisé) — prochain reset à 18/06 16:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T13:21:00.706216+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:19:00+00:00", "session_pct": 78}
+{"ts": "2026-06-18T13:21:00.706356+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (78% utilisé) — prochain reset à 18/06 16:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T13:51:02.537625+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T14:20:00+00:00", "session_pct": 78}
+{"ts": "2026-06-18T13:51:02.537768+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (78% utilisé) — prochain reset à 18/06 16:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T14:20:30.900637+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T14:20:30.900934+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T14:20:36.229630+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T14:20:36.229791+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T14:20:36.229892+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "16:20:30", "ping_response": "ok"}
+{"ts": "2026-06-18T14:20:36.230270+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T14:20:50.389242+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 0}
+{"ts": "2026-06-18T14:20:50.389564+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T19:20:30+00:00", "ping_at_local": "21:20:30"}
+{"ts": "2026-06-18T14:50:52.334531+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 4}
+{"ts": "2026-06-18T14:50:52.334672+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (4% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T15:20:57.290975+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 16}
+{"ts": "2026-06-18T15:20:57.291127+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (16% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T15:51:02.104194+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 42}
+{"ts": "2026-06-18T15:51:02.104365+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (42% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:21:07.373643+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:21:07.373814+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:42:06.983321+00:00", "level": "INFO", "module": "main", "msg": "Signal 2 reçu, arrêt propre..."}
+{"ts": "2026-06-18T16:42:07.563380+00:00", "level": "INFO", "module": "main", "msg": "ClaudePing arrêté."}
+{"ts": "2026-06-18T16:42:10.067067+00:00", "level": "ERROR", "module": "main", "msg": "UI non disponible : installez PySide6 pour l'exécuter."}
+{"ts": "2026-06-18T16:43:25.884483+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T16:43:25.955502+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T16:43:25.955752+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T16:43:25.958947+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T16:43:29.643216+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:43:29.643402+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:43:31.214285+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:43:31.214438+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:53:20.276237+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T16:53:24.600735+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T16:53:41.735479+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T16:53:41.736175+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T16:53:41.739421+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T16:53:43.167823+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:53:43.168007+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:53:44.636550+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:53:44.636767+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:53:56.985366+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T16:55:54.165004+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T16:55:54.236328+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T16:55:54.236619+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T16:55:54.239086+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T16:55:55.658406+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:55:55.658582+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T16:55:57.088383+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T16:55:57.088546+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T17:12:56.086299+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T17:13:02.769847+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T17:13:04.252897+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T17:13:04.253806+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T17:13:04.254093+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T17:13:04.258498+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T17:13:05.838296+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T17:13:05.838507+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T17:13:07.345167+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:20:00+00:00", "session_pct": 51}
+{"ts": "2026-06-18T17:13:07.345337+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (51% utilisé) — prochain reset à 18/06 21:20:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T17:13:21.856724+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T17:13:21.856982+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T17:13:21.857121+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T17:13:31.273530+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T17:13:32.695459+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 52}
+{"ts": "2026-06-18T17:13:32.696289+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T17:13:32.696622+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T17:13:32.699412+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T17:13:34.020554+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:13:34.020702+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T17:13:39.022477+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T17:13:39.022829+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T17:13:41.739767+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:13:41.739883+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T17:13:41.739969+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "19:13:39", "ping_response": "ok"}
+{"ts": "2026-06-18T17:13:41.749927+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T17:13:52.807425+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T17:13:52.807672+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T17:13:52.807821+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T17:13:52.907641+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:13:52.907765+00:00", "level": "WARNING", "module": "scheduler", "msg": "Impossible de récupérer le prochain reset → fallback."}
+{"ts": "2026-06-18T17:13:52.908079+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (fallback)", "ping_at_utc": "2026-06-19T05:00:30+00:00", "ping_at_local": "07:00:30"}
+{"ts": "2026-06-18T17:13:54.025953+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:13:59.792208+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T17:13:59.792467+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T17:13:59.792608+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T17:14:11.064065+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:17:26.136692+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T17:18:14.847716+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T17:18:16.034401+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:18:16.035226+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T17:18:16.035687+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T17:18:16.035802+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T17:18:17.298798+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:18:17.298930+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T17:18:21.317163+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T17:18:21.317414+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T17:18:21.317609+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T17:18:22.300662+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T17:18:22.301066+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T17:18:25.374617+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:18:25.374767+00:00", "level": "INFO", "module": "pinger", "msg": "Ping réussi", "response": "ok", "returncode": 0}
+{"ts": "2026-06-18T17:18:25.374883+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping réussi — compteur 5h démarré", "sent_at_local": "19:18:22", "ping_response": "ok"}
+{"ts": "2026-06-18T17:18:25.386713+00:00", "level": "INFO", "module": "scheduler", "msg": "Attente 10s puis /usage pour récupérer le prochain reset..."}
+{"ts": "2026-06-18T17:18:29.957152+00:00", "level": "WARNING", "module": "detector", "msg": "Impossible de parser l'heure de reset depuis /usage."}
+{"ts": "2026-06-18T17:18:36.738018+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 53}
+{"ts": "2026-06-18T17:18:36.738381+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T19:19:30+00:00", "ping_at_local": "21:19:30"}
+{"ts": "2026-06-18T17:48:38.833088+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 53}
+{"ts": "2026-06-18T17:48:38.833254+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (53% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:05:45.471866+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T18:05:47.140742+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T18:06:08.288735+00:00", "level": "INFO", "module": "detector", "msg": "Aucune heure de reset dans /usage (session inactive ou format non reconnu)."}
+{"ts": "2026-06-18T18:06:08.289784+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T18:06:08.290138+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T18:06:08.293006+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T18:06:14.495895+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T18:06:14.496207+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T18:06:14.503869+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T18:06:29.426811+00:00", "level": "INFO", "module": "detector", "msg": "Aucune heure de reset dans /usage (session inactive ou format non reconnu)."}
+{"ts": "2026-06-18T18:06:29.426953+00:00", "level": "INFO", "module": "scheduler", "msg": "Aucune session active détectée → ping immédiat pour démarrer le compteur."}
+{"ts": "2026-06-18T18:06:34.428425+00:00", "level": "INFO", "module": "scheduler", "msg": "Tentative de ping #1/5"}
+{"ts": "2026-06-18T18:06:34.428689+00:00", "level": "INFO", "module": "pinger", "msg": "Envoi du ping", "ping_model": "haiku", "ping_message": "reply with just: ok"}
+{"ts": "2026-06-18T18:07:00.732229+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T18:07:04.472892+00:00", "level": "ERROR", "module": "pinger", "msg": "Timeout après 30s lors du ping."}
+{"ts": "2026-06-18T18:07:04.473033+00:00", "level": "ERROR", "module": "scheduler", "msg": "Ping échoué après 5 tentatives : Timeout après 30s lors du ping."}
+{"ts": "2026-06-18T18:07:08.810372+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T18:07:13.850849+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 61}
+{"ts": "2026-06-18T18:07:13.851677+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T18:07:13.852032+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T18:07:13.852142+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T18:07:15.578897+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 61}
+{"ts": "2026-06-18T18:07:15.579133+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (61% utilisé) — prochain reset à 18/06 21:19:00, ping schedulé."}
+{"ts": "2026-06-18T18:07:15.579504+00:00", "level": "INFO", "module": "scheduler", "msg": "Ping schedulé (intelligent)", "ping_at_utc": "2026-06-18T19:19:30+00:00", "ping_at_local": "21:19:30"}
+{"ts": "2026-06-18T18:07:17.207351+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 61}
+{"ts": "2026-06-18T18:07:17.207528+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (61% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:12:56.141576+00:00", "level": "INFO", "module": "<string>", "msg": "Test message 1"}
+{"ts": "2026-06-18T18:12:56.141701+00:00", "level": "WARNING", "module": "<string>", "msg": "Test warning"}
+{"ts": "2026-06-18T18:12:56.141750+00:00", "level": "INFO", "module": "<string>", "msg": "Test message 2"}
+{"ts": "2026-06-18T18:13:01.786819+00:00", "level": "INFO", "module": "service", "msg": "Fallback activé via UI."}
+{"ts": "2026-06-18T18:13:01.787083+00:00", "level": "INFO", "module": "service", "msg": "Heure de fallback mise à jour : 07:00"}
+{"ts": "2026-06-18T18:13:01.787281+00:00", "level": "INFO", "module": "service", "msg": "Chemin Claude Code CLI configuré : claude"}
+{"ts": "2026-06-18T18:13:03.649079+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 66}
+{"ts": "2026-06-18T18:17:47.475253+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T18:17:49.511383+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T18:17:51.319860+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 66}
+{"ts": "2026-06-18T18:17:51.321728+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T18:17:51.322095+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T18:17:51.325284+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T18:17:53.004696+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 66}
+{"ts": "2026-06-18T18:17:53.004870+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (66% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:17:54.600490+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 66}
+{"ts": "2026-06-18T18:17:54.600685+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (66% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:22:13.552975+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}
+{"ts": "2026-06-18T18:22:15.903415+00:00", "level": "INFO", "module": "main", "msg": "Lancement de l'interface graphique..."}
+{"ts": "2026-06-18T18:22:17.890258+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 68}
+{"ts": "2026-06-18T18:22:17.892159+00:00", "level": "INFO", "module": "service", "msg": "Démarrage du service ClaudePing..."}
+{"ts": "2026-06-18T18:22:17.892547+00:00", "level": "INFO", "module": "scheduler", "msg": "Scheduler démarré."}
+{"ts": "2026-06-18T18:22:17.895746+00:00", "level": "INFO", "module": "scheduler", "msg": "Probe initial au démarrage..."}
+{"ts": "2026-06-18T18:22:19.555566+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 68}
+{"ts": "2026-06-18T18:22:19.555752+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (68% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:22:21.407592+00:00", "level": "INFO", "module": "detector", "msg": "Reset détecté via /usage", "reset_at_utc": "2026-06-18T19:19:00+00:00", "session_pct": 68}
+{"ts": "2026-06-18T18:22:21.407740+00:00", "level": "INFO", "module": "scheduler", "msg": "Session active (68% utilisé) — prochain reset à 18/06 21:19:00, ping déjà schedulé au bon moment."}
+{"ts": "2026-06-18T18:27:34.086541+00:00", "level": "INFO", "module": "service", "msg": "Arrêt du service ClaudePing..."}

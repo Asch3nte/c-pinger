@@ -32,14 +32,23 @@ class StateManager:
 
     def _load(self) -> dict:
         """Charge l'état depuis le fichier JSON."""
+        default_state = {
+            "ping_scheduled_at": None,
+            "last_ping_at": None,
+            "ping_count": 0,
+            "last_notified_ping_at": None,
+        }
         if not self._file.exists():
-            return {"ping_scheduled_at": None, "last_ping_at": None, "ping_count": 0}
+            return default_state
         try:
             with open(self._file, encoding="utf-8") as f:
-                return json.load(f)
+                state = json.load(f)
+            for key, value in default_state.items():
+                state.setdefault(key, value)
+            return state
         except (json.JSONDecodeError, OSError) as e:
             logger.warning(f"État corrompu ou illisible, reset : {e}")
-            return {"ping_scheduled_at": None, "last_ping_at": None, "ping_count": 0}
+            return default_state
 
     def _save(self) -> None:
         """Persiste l'état dans le fichier JSON."""
@@ -89,3 +98,21 @@ class StateManager:
 
     def get_ping_count(self) -> int:
         return self._state.get("ping_count", 0)
+
+    def get_last_notified_ping_at(self) -> datetime | None:
+        raw = self._state.get("last_notified_ping_at")
+        if raw is None:
+            return None
+        try:
+            dt = datetime.fromisoformat(raw)
+            return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+
+    def set_last_notified_ping_at(self, dt: datetime) -> None:
+        self._state["last_notified_ping_at"] = dt.isoformat()
+        self._save()
+
+    def clear_last_notified_ping_at(self) -> None:
+        self._state["last_notified_ping_at"] = None
+        self._save()

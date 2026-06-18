@@ -5,7 +5,9 @@ Logging structuré en JSON Lines avec rotation automatique.
 import logging
 import logging.handlers
 import json
+import sys
 import traceback
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -58,6 +60,8 @@ def setup_logger(
 
     logger = logging.getLogger("claudeping")
     logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+    logger.propagate = False
+    logger.handlers.clear()
 
     # Handler fichier avec rotation
     file_handler = logging.handlers.RotatingFileHandler(
@@ -70,7 +74,7 @@ def setup_logger(
     logger.addHandler(file_handler)
 
     # Handler console (format humain)
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(
         logging.Formatter(
             fmt="%(asctime)s [%(levelname)s] %(message)s",
@@ -85,3 +89,42 @@ def setup_logger(
 def get_logger() -> logging.Logger:
     """Retourne le logger ClaudePing (après setup_logger appelé)."""
     return logging.getLogger("claudeping")
+
+
+class GUILogHandler(logging.Handler):
+    """Stocke les lignes de log en mémoire pour l'affichage dans l'UI."""
+
+    def __init__(self, maxlen: int = 1000) -> None:
+        super().__init__()
+        self._buffer: deque[str] = deque(maxlen=maxlen)
+        self.setFormatter(logging.Formatter(
+            fmt="%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            self._buffer.append(self.format(record))
+        except Exception:
+            self.handleError(record)
+
+    def get_lines(self) -> list[str]:
+        return list(self._buffer)
+
+    def clear(self) -> None:
+        self._buffer.clear()
+
+
+_gui_handler: "GUILogHandler | None" = None
+
+
+def install_gui_log_handler(maxlen: int = 1000) -> GUILogHandler:
+    """Installe un handler mémoire pour l'UI et le retourne."""
+    global _gui_handler
+    _gui_handler = GUILogHandler(maxlen=maxlen)
+    logging.getLogger("claudeping").addHandler(_gui_handler)
+    return _gui_handler
+
+
+def get_gui_log_handler() -> "GUILogHandler | None":
+    return _gui_handler

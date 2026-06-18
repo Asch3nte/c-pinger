@@ -1,10 +1,11 @@
 """
-Logique de scheduling : mode intelligent (détection quota) 
+Logique de scheduling : mode intelligent (détection quota)
 et mode fallback (heure fixe).
 """
 
 from __future__ import annotations
 
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -32,9 +33,45 @@ class Scheduler:
         self.config = config
         self.state = state
         self._stop = False
+        self._lock = threading.RLock()
+        self.last_probe_at: datetime | None = None
+        self.last_quota_info: QuotaInfo | None = None
 
     def stop(self) -> None:
         self._stop = True
+
+    def trigger_ping_now(self) -> PingResult:
+        with self._lock:
+            logger.info("Ping forcé depuis l'interface utilisateur.")
+            return self._do_ping()
+
+    def schedule_manual_ping(self, time_str: str) -> datetime:
+        with self._lock:
+            tz = ZoneInfo(self.config.fallback.timezone)
+            now_local = datetime.now(tz)
+            hour, minute = self._parse_manual_time(time_str)
+            manual_local = now_local.replace(hour=hour, minute=minute, second=0, microsecond=0)
+            if manual_local <= now_local:
+                manual_local += timedelta(days=1)
+            manual_utc = manual_local.astimezone(timezone.utc)
+            self.state.set_ping_scheduled_at(manual_utc)
+            self.state.clear_last_notified_ping_at()
+            logger.info(
+                f"Ping manuel programmé à {manual_local.strftime('%Y-%m-%d %H:%M:%S %Z')} "
+                f"({manual_utc.isoformat()})"
+            )
+            return manual_utc
+
+    @staticmethod
+    def _parse_manual_time(value: str) -> tuple[int, int]:
+        try:
+            h, m = value.strip().split(":")
+            hour, minute = int(h), int(m)
+            if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                raise ValueError
+            return hour, minute
+        except ValueError:
+            raise ValueError(f"Format d'heure invalide : '{value}'. Utilisez HH:MM.")
 
     # ------------------------------------------------------------------
     # Boucle principale
@@ -45,13 +82,14 @@ class Scheduler:
         self._initial_probe()
 
         while not self._stop:
-            now = datetime.now(timezone.utc)
-            ping_scheduled_at = self.state.get_ping_scheduled_at()
+            with self._lock:
+                now = datetime.now(timezone.utc)
+                ping_scheduled_at = self.state.get_ping_scheduled_at()
 
-            if ping_scheduled_at is not None and now >= ping_scheduled_at:
-                self._do_ping()
-            else:
-                self._do_probe()
+                if ping_scheduled_at is not None and now >= ping_scheduled_at:
+                    self._do_ping()
+                else:
+                    self._do_probe()
 
             # ← Relire APRÈS probe (qui peut avoir modifié le schedule)
             ping_scheduled_at = self.state.get_ping_scheduled_at()
@@ -67,7 +105,10 @@ class Scheduler:
         """Probe unique au démarrage — récupère le reset_at réel via /usage."""
         logger.info("Probe initial au démarrage...")
         try:
-            self._handle_probe_result(run_usage_check())
+            result = run_usage_check(self.config.claude_executable)
+            self.last_probe_at = datetime.now(timezone.utc)
+            self.last_quota_info = result
+            self._handle_probe_result(result)
         except DetectorError as e:
             logger.warning(f"Probe initial échoué : {e}")
             if self.config.fallback.enabled:
@@ -82,7 +123,10 @@ class Scheduler:
                 logger.debug("Ping imminent, probe ignoré.")
                 return
         try:
-            self._handle_probe_result(run_usage_check())
+            result = run_usage_check(self.config.claude_executable)
+            self.last_probe_at = datetime.now(timezone.utc)
+            self.last_quota_info = result
+            self._handle_probe_result(result)
         except DetectorError as e:
             logger.warning(f"Probe échoué : {e}")
             if self.config.notifications.enabled and self.config.notifications.on_error:
@@ -153,6 +197,21 @@ class Scheduler:
             logger.info(f"Heure de reset déjà passée ({source}), ping immédiat.")
             ping_at = now + timedelta(seconds=5)
 
+        current = self.state.get_ping_scheduled_at()
+        if current is not None and abs((current - ping_at).total_seconds()) < 60:
+            logger.info(
+                f"Ping déjà schedulé au même moment ({source}) — aucun changement.",
+                extra={"ping_at_utc": ping_at.isoformat()},
+            )
+            if notify and self.config.notifications.enabled and self.config.notifications.on_quota_detected:
+                last_notified = self.state.get_last_notified_ping_at()
+                if last_notified is None or abs((last_notified - ping_at).total_seconds()) > 1:
+                    notify_quota_detected(ping_at.astimezone(ZoneInfo(self.config.fallback.timezone)).strftime("%H:%M:%S"))
+                    self.state.set_last_notified_ping_at(ping_at)
+                else:
+                    logger.debug("Notification de ping déjà envoyée pour cette heure, suppression du doublon.")
+            return
+
         self.state.set_ping_scheduled_at(ping_at)
 
         tz = ZoneInfo(self.config.fallback.timezone)
@@ -165,6 +224,7 @@ class Scheduler:
 
         if notify and self.config.notifications.enabled and self.config.notifications.on_quota_detected:
             notify_quota_detected(ping_at_local)
+            self.state.set_last_notified_ping_at(ping_at)
 
     def _schedule_fallback(self) -> None:
         tz = ZoneInfo(self.config.fallback.timezone)
@@ -180,12 +240,13 @@ class Scheduler:
     # Ping
     # ------------------------------------------------------------------
 
-    def _do_ping(self) -> None:
+    def _do_ping(self) -> PingResult:
         tz = ZoneInfo(self.config.fallback.timezone)
 
         for attempt in range(1, PING_MAX_RETRIES + 1):
             logger.info(f"Tentative de ping #{attempt}/{PING_MAX_RETRIES}")
             result: PingResult = send_ping(
+                self.config.claude_executable,
                 self.config.ping.model,
                 self.config.ping.message,
             )
@@ -205,7 +266,7 @@ class Scheduler:
                 # Après un ping réussi : on refait un /usage pour connaître
                 # le prochain reset et le reschedule immédiatement.
                 self._schedule_next_after_ping()
-                return
+                return result
 
             if result.quota_still_active and attempt < PING_MAX_RETRIES:
                 logger.info(f"Quota toujours actif, retry dans {PING_RETRY_DELAY}s...")
@@ -221,6 +282,7 @@ class Scheduler:
 
         retry_at = datetime.now(timezone.utc) + timedelta(minutes=10)
         self.state.set_ping_scheduled_at(retry_at)
+        return result
 
     def _schedule_next_after_ping(self) -> None:
         """
@@ -231,7 +293,7 @@ class Scheduler:
         logger.info("Attente 10s puis /usage pour récupérer le prochain reset...")
         time.sleep(10)
         try:
-            usage = run_usage_check()
+            usage = run_usage_check(self.config.claude_executable)
             if usage.reset_at is not None:
                 self._schedule_ping(usage.reset_at, source="intelligent", notify=True)
             else:

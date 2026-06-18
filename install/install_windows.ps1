@@ -69,8 +69,14 @@ Copy-Item -Path "$ProjectDir\*" -Destination $InstallDir -Recurse -Force
 
 # 3. Config
 if (-not (Test-Path "$InstallDir\config.yaml")) {
-    Copy-Item "$InstallDir\config.yaml.example" "$InstallDir\config.yaml"
-    Write-Host "-> config.yaml créé. Éditez $InstallDir\config.yaml." -ForegroundColor Yellow
+    if (Test-Path "$InstallDir\config.yaml.example") {
+        Copy-Item "$InstallDir\config.yaml.example" "$InstallDir\config.yaml"
+        Write-Host "-> config.yaml créé. Éditez $InstallDir\config.yaml." -ForegroundColor Yellow
+    } elseif (Test-Path "$InstallDir\config.yaml") {
+        Write-Host "-> config.yaml déjà présent." -ForegroundColor Yellow
+    } else {
+        Write-Warning "Aucun fichier config.yaml ou config.yaml.example trouvé dans le projet."
+    }
 }
 
 # Injecter le chemin claude dans config.yaml si trouvé et pas déjà présent
