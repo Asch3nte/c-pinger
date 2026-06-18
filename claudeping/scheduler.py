@@ -101,6 +101,26 @@ class Scheduler:
     # Probe
     # ------------------------------------------------------------------
 
+    def _log_quota_summary(self, result: QuotaInfo) -> None:
+        """Logue un résumé lisible des quotas session + hebdo."""
+        tz = ZoneInfo(self.config.fallback.timezone)
+
+        if result.session_pct is not None:
+            reset_str = (
+                result.reset_at.astimezone(tz).strftime("%d/%m à %H:%M %Z")
+                if result.reset_at else "inconnu"
+            )
+            logger.info(f"Session : {result.session_pct}% utilisé — reset le {reset_str}")
+        else:
+            logger.info("Session : aucune session active (compteur à 0)")
+
+        if result.weekly_used is not None:
+            w_reset_str = (
+                result.weekly_reset_at.astimezone(tz).strftime("%d/%m à %H:%M %Z")
+                if result.weekly_reset_at else "inconnu"
+            )
+            logger.info(f"Hebdo   : {result.weekly_used:.0f}% utilisé — reset le {w_reset_str}")
+
     def _initial_probe(self) -> None:
         """Probe unique au démarrage — récupère le reset_at réel via /usage."""
         logger.info("Probe initial au démarrage...")
@@ -108,6 +128,7 @@ class Scheduler:
             result = run_usage_check(self.config.claude_executable)
             self.last_probe_at = datetime.now(timezone.utc)
             self.last_quota_info = result
+            self._log_quota_summary(result)
             self._handle_probe_result(result)
         except DetectorError as e:
             logger.warning(f"Probe initial échoué : {e}")
@@ -126,6 +147,7 @@ class Scheduler:
             result = run_usage_check(self.config.claude_executable)
             self.last_probe_at = datetime.now(timezone.utc)
             self.last_quota_info = result
+            self._log_quota_summary(result)
             self._handle_probe_result(result)
         except DetectorError as e:
             logger.warning(f"Probe échoué : {e}")
@@ -153,26 +175,15 @@ class Scheduler:
             return
 
         if result.reset_at is not None:
-            # Session en cours : on connaît l'heure de reset réelle.
-            # On ne reschedule que si rien n'est déjà prévu ou si l'heure
-            # diffère significativement (> 2 min) de ce qui est schedulé.
+            # Session en cours : reschedule si l'heure diffère de plus de 2 min.
             current = self.state.get_ping_scheduled_at()
             new_ping_at = result.reset_at + timedelta(seconds=30)
 
             if current is None or abs((new_ping_at - current).total_seconds()) > 120:
-                tz = ZoneInfo(self.config.fallback.timezone)
-                reset_local = result.reset_at.astimezone(tz).strftime("%d/%m %H:%M:%S")
-                logger.info(
-                    f"Session active ({result.session_pct}% utilisé) — "
-                    f"prochain reset à {reset_local}, ping schedulé."
-                )
+                logger.info("Ping schedulé au prochain reset de session.")
                 self._schedule_ping(result.reset_at, source="intelligent", notify=False)
             else:
-                tz = ZoneInfo(self.config.fallback.timezone)
-                reset_local = result.reset_at.astimezone(tz).strftime("%d/%m %H:%M:%S")
-                logger.info(                                          # info, pas debug
-                    f"Session active ({result.session_pct}% utilisé) — "
-                    f"prochain reset à {reset_local}, ping déjà schedulé au bon moment."
+                logger.info("Ping déjà schedulé au bon moment, aucun changement."
                 )
             return
 

@@ -17,19 +17,7 @@ logger = get_logger()
 CLI_TIMEOUT = 30
 CLI_AUTH_TIMEOUT = 120  # browser OAuth can take longer
 
-# "resets Jun 10, 4:40am (Europe/Brussels)"  ← avec date, avec minutes
-# "resets Jun 22, 2pm (Europe/Brussels)"      ← avec date, sans minutes
-# "resets 4:40am (Europe/Brussels)"           ← sans date (même jour)
-_RESET_WITH_DATE = re.compile(
-    r"resets\s+([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
-    re.IGNORECASE,
-)
-_RESET_TIME_ONLY = re.compile(
-    r"resets\s+(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
-    re.IGNORECASE,
-)
-
-# Quota 100% atteint — message probable (à ajuster si nécessaire)
+# Quota 100% atteint
 _QUOTA_HIT = re.compile(
     r"you'?ve hit your (session|usage) limit",
     re.IGNORECASE,
@@ -41,18 +29,26 @@ _MONTH_MAP = {
     "sep": 9, "oct": 10, "nov": 11, "dec": 12,
 }
 
-_DAILY_USAGE = re.compile(
-    r"daily(?:\s+usage|\s+quota)?\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)\s*/\s*([0-9]+(?:\.[0-9]+)?)",
+# Regexes spécifiques par ligne pour ne pas mélanger session et hebdo
+# "Current session: 76% used · resets Jun 18, 9:20pm (Europe/Brussels)"
+_SESSION_LINE = re.compile(
+    r"Current session:[^\n]*?(\d+)%[^\n]*?resets\s+([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
     re.IGNORECASE,
 )
-_WEEKLY_USAGE = re.compile(
-    r"weekly(?:\s+usage|\s+quota)?\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)\s*/\s*([0-9]+(?:\.[0-9]+)?)",
+_SESSION_LINE_TIME_ONLY = re.compile(
+    r"Current session:[^\n]*?(\d+)%[^\n]*?resets\s+(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
     re.IGNORECASE,
 )
-_MONTHLY_USAGE = re.compile(
-    r"monthly(?:\s+usage|\s+quota)?\s*[:\-]?\s*([0-9]+(?:\.[0-9]+)?)\s*/\s*([0-9]+(?:\.[0-9]+)?)",
+# "Current week (all models): 86% used · resets Jun 22, 2pm (Europe/Brussels)"
+_WEEKLY_LINE = re.compile(
+    r"Current week[^\n]*?(\d+)%[^\n]*?resets\s+([A-Za-z]{3})\s+(\d{1,2}),\s*(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
     re.IGNORECASE,
 )
+_WEEKLY_LINE_TIME_ONLY = re.compile(
+    r"Current week[^\n]*?(\d+)%[^\n]*?resets\s+(\d{1,2}(?::\d{2})?(?:am|pm))\s*\(([^)]+)\)",
+    re.IGNORECASE,
+)
+
 _AUTH_REQUIRED = re.compile(
     r"(not logged in|please login|login required|unauthorized|invalid auth|account required|must authenticate)",
     re.IGNORECASE,
@@ -67,15 +63,11 @@ _AUTH_OK = re.compile(
 class QuotaInfo:
     """Résultat d'une interrogation /usage."""
     quota_hit: bool
-    reset_at: datetime | None = None   # UTC
-    session_pct: int | None = None     # % utilisé (0-100)
+    reset_at: datetime | None = None         # UTC — heure de reset de la session
+    session_pct: int | None = None           # % session utilisé (0-100)
+    weekly_used: float | None = None         # % hebdo utilisé
+    weekly_reset_at: datetime | None = None  # UTC — heure de reset hebdo
     raw_output: str = ""
-    daily_used: float | None = None
-    daily_limit: float | None = None
-    weekly_used: float | None = None
-    weekly_limit: float | None = None
-    monthly_used: float | None = None
-    monthly_limit: float | None = None
     auth_status: str = "inconnu"
     cli_available: bool = True
 
@@ -122,24 +114,23 @@ def _build_reset_datetime(hour: int, minute: int, month: int | None,
     return dt.astimezone(timezone.utc)
 
 
-def _find_usage_pair(output: str, regex: re.Pattern) -> tuple[float | None, float | None]:
-    match = regex.search(output)
-    if not match:
-        return None, None
+def _parse_reset_from_match(groups: tuple, with_date: bool) -> datetime | None:
+    """Construit un datetime UTC depuis les groupes d'un match de regex reset."""
     try:
-        return float(match.group(1)), float(match.group(2))
-    except ValueError:
-        return None, None
-
-
-def _find_percent(output: str, label: str) -> float | None:
-    regex = re.compile(rf"Current\s+{label}\s*\([^)]*\)?\s*:\s*([0-9]+(?:\.[0-9]+)?)% used", re.IGNORECASE)
-    match = regex.search(output)
-    if not match:
-        return None
-    try:
-        return float(match.group(1))
-    except ValueError:
+        if with_date:
+            month_str, day_str, time_str, tz_str = groups
+            month = _MONTH_MAP[month_str[:3].lower()]
+            day = int(day_str)
+            hour, minute = _parse_time_str(time_str)
+            tz = ZoneInfo(tz_str)
+            return _build_reset_datetime(hour, minute, month, day, tz)
+        else:
+            time_str, tz_str = groups
+            hour, minute = _parse_time_str(time_str)
+            tz = ZoneInfo(tz_str)
+            return _build_reset_datetime(hour, minute, None, None, tz)
+    except Exception as e:
+        logger.warning(f"Parsing reset échoué : {e}")
         return None
 
 
@@ -156,93 +147,49 @@ def parse_usage_output(output: str) -> QuotaInfo:
 
     auth_status = _detect_auth_status(output)
 
-    # Quota atteint ?
     if _QUOTA_HIT.search(output):
         logger.warning("Quota atteint détecté dans l'output.")
-        daily_used, daily_limit = _find_usage_pair(output, _DAILY_USAGE)
-        monthly_used, monthly_limit = _find_usage_pair(output, _MONTHLY_USAGE)
-        return QuotaInfo(
-            quota_hit=True,
-            raw_output=output,
-            auth_status=auth_status,
-            daily_used=daily_used,
-            daily_limit=daily_limit,
-            monthly_used=monthly_used,
-            monthly_limit=monthly_limit,
-        )
+        return QuotaInfo(quota_hit=True, raw_output=output, auth_status=auth_status)
 
-    # % de session utilisé
-    pct_match = re.search(r"Current session:\s*(\d+)%", output, re.IGNORECASE)
-    session_pct = int(pct_match.group(1)) if pct_match else None
+    # --- Session ---
+    session_pct: int | None = None
+    reset_at: datetime | None = None
 
-    daily_used, daily_limit = _find_usage_pair(output, _DAILY_USAGE)
-    weekly_used, weekly_limit = _find_usage_pair(output, _WEEKLY_USAGE)
-    monthly_used, monthly_limit = _find_usage_pair(output, _MONTHLY_USAGE)
-
-    # Remplir les pourcentages si l'output n'a pas de pair x/y
-    if daily_used is None and daily_limit is None:
-        daily_percent = _find_percent(output, "day")
-        if daily_percent is not None:
-            daily_used = daily_percent
-            daily_limit = 100.0
-    if weekly_used is None and weekly_limit is None:
-        weekly_percent = _find_percent(output, "week")
-        if weekly_percent is not None:
-            weekly_used = weekly_percent
-            weekly_limit = 100.0
-    if monthly_used is None and monthly_limit is None:
-        monthly_percent = _find_percent(output, "month")
-        if monthly_percent is not None:
-            monthly_used = monthly_percent
-            monthly_limit = 100.0
-
-    # Heure de reset — format avec date en priorité
-    reset_at = None
-    m = _RESET_WITH_DATE.search(output)
+    m = _SESSION_LINE.search(output)
     if m:
-        month_str, day_str, time_str, tz_str = m.group(1), m.group(2), m.group(3), m.group(4)
-        try:
-            month = _MONTH_MAP[month_str[:3].lower()]
-            day = int(day_str)
-            hour, minute = _parse_time_str(time_str)
-            tz = ZoneInfo(tz_str)
-            reset_at = _build_reset_datetime(hour, minute, month, day, tz)
-        except Exception as e:
-            logger.warning(f"Parsing reset (avec date) échoué : {e}")
+        session_pct = int(m.group(1))
+        reset_at = _parse_reset_from_match(m.group(2, 3, 4, 5), with_date=True)
     else:
-        m2 = _RESET_TIME_ONLY.search(output)
+        m2 = _SESSION_LINE_TIME_ONLY.search(output)
         if m2:
-            time_str, tz_str = m2.group(1), m2.group(2)
-            try:
-                hour, minute = _parse_time_str(time_str)
-                tz = ZoneInfo(tz_str)
-                reset_at = _build_reset_datetime(hour, minute, None, None, tz)
-            except Exception as e:
-                logger.warning(f"Parsing reset (heure seule) échoué : {e}")
+            session_pct = int(m2.group(1))
+            reset_at = _parse_reset_from_match(m2.group(2, 3), with_date=False)
 
-    if reset_at:
-        logger.info(
-            "Reset détecté via /usage",
-            extra={
-                "reset_at_utc": reset_at.isoformat(),
-                "session_pct": session_pct,
-            },
-        )
+    if reset_at is None and session_pct is None:
+        logger.info("Aucune session active dans /usage (compteur à 0 ou non démarré).")
+
+    # --- Hebdo ---
+    weekly_used: float | None = None
+    weekly_reset_at: datetime | None = None
+
+    wm = _WEEKLY_LINE.search(output)
+    if wm:
+        weekly_used = float(wm.group(1))
+        weekly_reset_at = _parse_reset_from_match(wm.group(2, 3, 4, 5), with_date=True)
     else:
-        logger.info("Aucune heure de reset dans /usage (session inactive ou format non reconnu).")
+        wm2 = _WEEKLY_LINE_TIME_ONLY.search(output)
+        if wm2:
+            weekly_used = float(wm2.group(1))
+            weekly_reset_at = _parse_reset_from_match(wm2.group(2, 3), with_date=False)
 
     return QuotaInfo(
         quota_hit=False,
         reset_at=reset_at,
         session_pct=session_pct,
+        weekly_used=weekly_used,
+        weekly_reset_at=weekly_reset_at,
         raw_output=output,
         auth_status=auth_status,
-        daily_used=daily_used,
-        daily_limit=daily_limit,
-        weekly_used=weekly_used,
-        weekly_limit=weekly_limit,
-        monthly_used=monthly_used,
-        monthly_limit=monthly_limit,
     )
 
 

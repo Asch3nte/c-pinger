@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 )
 
 from claudeping.logger import get_gui_log_handler
+from claudeping.notifier import notify_running_in_background
 from claudeping.service import ClaudePingService
 
 
@@ -76,7 +77,6 @@ class ClaudePingWindow(QMainWindow):
         self.quota_status_label = QLabel("—")
         self.session_quota_label = QLabel("—")
         self.weekly_quota_label = QLabel("—")
-        self.monthly_quota_label = QLabel("—")
         self.cli_status_label = QLabel("—")
         self.last_probe_label = QLabel("—")
 
@@ -112,10 +112,9 @@ class ClaudePingWindow(QMainWindow):
         status_layout.addRow("Prochain ping :", self.next_ping_label)
         status_layout.addRow("Dernier ping :", self.last_ping_label)
         status_layout.addRow("Total pings :", self.ping_count_label)
-        status_layout.addRow("Quota (session/hebdo/mensuel) :", self.quota_status_label)
+        status_layout.addRow("Quota (session / hebdo) :", self.quota_status_label)
         status_layout.addRow("Quota session :", self.session_quota_label)
         status_layout.addRow("Quota hebdo :", self.weekly_quota_label)
-        status_layout.addRow("Quota mensuel :", self.monthly_quota_label)
         status_layout.addRow("Dernière probe :", self.last_probe_label)
 
         settings_layout = QFormLayout()
@@ -217,7 +216,7 @@ class ClaudePingWindow(QMainWindow):
         open_action.triggered.connect(self.showNormal)
         refresh_action.triggered.connect(self.refresh_status)
         hide_action.triggered.connect(self.hide)
-        quit_action.triggered.connect(self.close)
+        quit_action.triggered.connect(self._quit)
 
         menu.addAction(open_action)
         menu.addAction(refresh_action)
@@ -247,20 +246,19 @@ class ClaudePingWindow(QMainWindow):
         self.last_ping_label.setText(format_timestamp(status.last_ping_at, tz))
         self.ping_count_label.setText(str(status.ping_count))
         self.quota_status_label.setText(
-            f"session: {status.quota_status_daily} | "
-            f"hebdo: {status.quota_status_weekly} | "
-            f"mensuel: {status.quota_status_monthly}"
+            f"session: {status.quota_status_session} | hebdo: {status.quota_status_weekly}"
+        )
+        session_reset_str = (
+            f" (reset {format_timestamp(status.reset_at, tz)})" if status.reset_at else ""
         )
         self.session_quota_label.setText(
-            f"{status.session_pct if status.session_pct is not None else '—'}% / 100%"
+            f"{status.session_pct if status.session_pct is not None else '—'}%{session_reset_str}"
+        )
+        weekly_reset_str = (
+            f" (reset {format_timestamp(status.weekly_reset_at, tz)})" if status.weekly_reset_at else ""
         )
         self.weekly_quota_label.setText(
-            f"{status.weekly_used if status.weekly_used is not None else '—'}% / "
-            f"{status.weekly_limit if status.weekly_limit is not None else '—'}%"
-        )
-        self.monthly_quota_label.setText(
-            f"{status.monthly_used if status.monthly_used is not None else '—'}% / "
-            f"{status.monthly_limit if status.monthly_limit is not None else '—'}%"
+            f"{status.weekly_used if status.weekly_used is not None else '—'}%{weekly_reset_str}"
         )
         self.cli_status_label.setText(
             f"{status.auth_status} {'(disponible)' if status.cli_available else '(absent)'}"
@@ -419,10 +417,21 @@ class ClaudePingWindow(QMainWindow):
             QMessageBox.warning(self, "Erreur", str(exc))
 
     def closeEvent(self, event) -> None:
+        # X ferme la fenêtre mais laisse le service tourner en tray
+        if hasattr(self, "tray_icon") and self.tray_icon.isSystemTrayAvailable():
+            event.ignore()
+            self.hide()
+            notify_running_in_background()
+        else:
+            # Pas de tray disponible → on quitte vraiment
+            self._quit()
+            super().closeEvent(event)
+
+    def _quit(self) -> None:
         self.service.stop()
         if hasattr(self, "tray_icon"):
             self.tray_icon.hide()
-        super().closeEvent(event)
+        QApplication.quit()
 
 
 def launch_ui(service: ClaudePingService) -> None:

@@ -33,17 +33,12 @@ class ServiceStatus:
     quota_hit: bool | None
     session_pct: int | None
     reset_at: datetime | None
-    daily_used: float | None = None
-    daily_limit: float | None = None
     weekly_used: float | None = None
-    weekly_limit: float | None = None
-    monthly_used: float | None = None
-    monthly_limit: float | None = None
+    weekly_reset_at: datetime | None = None
     auth_status: str = "inconnu"
     cli_available: bool = False
-    quota_status_daily: str = "inconnu"
-    quota_status_weekly: str = "inconnu"
-    quota_status_monthly: str = "inconnu"
+    quota_status_session: str = "—"
+    quota_status_weekly: str = "—"
     probe_interval_minutes: int = 30
 
 
@@ -157,45 +152,28 @@ class ClaudePingService:
             quota_hit=quota_info.quota_hit if quota_info is not None else None,
             session_pct=quota_info.session_pct if quota_info is not None else None,
             reset_at=quota_info.reset_at if quota_info is not None else None,
-            daily_used=quota_info.daily_used if quota_info is not None else None,
-            daily_limit=quota_info.daily_limit if quota_info is not None else None,
             weekly_used=quota_info.weekly_used if quota_info is not None else None,
-            weekly_limit=quota_info.weekly_limit if quota_info is not None else None,
-            monthly_used=quota_info.monthly_used if quota_info is not None else None,
-            monthly_limit=quota_info.monthly_limit if quota_info is not None else None,
+            weekly_reset_at=quota_info.weekly_reset_at if quota_info is not None else None,
             auth_status=quota_info.auth_status if quota_info is not None else "inconnu",
             cli_available=quota_info.cli_available if quota_info is not None else False,
-            quota_status_daily=self._compute_quota_status(quota_info),
+            quota_status_session=self._compute_quota_status(quota_info),
             quota_status_weekly=self._compute_quota_status(quota_info, weekly=True),
-            quota_status_monthly=self._compute_quota_status(quota_info, monthly=True),
             probe_interval_minutes=self.config.probe.interval_minutes,
         )
 
-    def _compute_quota_status(
-        self,
-        quota_info: QuotaInfo | None,
-        weekly: bool = False,
-        monthly: bool = False,
-    ) -> str:
+    def _compute_quota_status(self, quota_info: QuotaInfo | None, weekly: bool = False) -> str:
         if quota_info is None:
             return "—"
         if quota_info.quota_hit:
             return "quota atteint"
 
-        if monthly:
-            if quota_info.monthly_used is None or quota_info.monthly_limit is None:
-                return "—"
-            return "ok" if quota_info.monthly_used < quota_info.monthly_limit else "quota atteint"
         if weekly:
-            if quota_info.weekly_used is None or quota_info.weekly_limit is None:
+            if quota_info.weekly_used is None:
                 return "—"
-            return "ok" if quota_info.weekly_used < quota_info.weekly_limit else "quota atteint"
+            return "ok" if quota_info.weekly_used < 100 else "quota atteint"
 
-        # Session (fenêtre 5h de Claude) — utilise session_pct en priorité
         if quota_info.session_pct is not None:
             return "ok" if quota_info.session_pct < 100 else "quota atteint"
-        if quota_info.daily_used is not None and quota_info.daily_limit is not None:
-            return "ok" if quota_info.daily_used < quota_info.daily_limit else "quota atteint"
         return "—"
 
     @classmethod
