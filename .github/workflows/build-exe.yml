@@ -1,0 +1,50 @@
+name: Build Windows EXE
+
+on:
+  workflow_dispatch:        # Déclenchement manuel depuis GitHub
+  push:
+    tags:
+      - 'v*'               # Déclenchement automatique sur un tag ex: v1.2.0
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installation des dépendances
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build de l'EXE
+        run: >
+          pyinstaller
+          --onefile
+          --name claudeping
+          --hidden-import plyer.platforms.win.notification
+          --hidden-import zoneinfo
+          --hidden-import tzdata
+          main.py
+
+      - name: Upload de l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: claudeping-windows
+          path: dist/claudeping.exe
+          retention-days: 30
+
+      # Cette étape ne s'exécute que si le workflow a été déclenché par un tag v*
+      - name: Création de la release GitHub
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/claudeping.exe
+          generate_release_notes: true
