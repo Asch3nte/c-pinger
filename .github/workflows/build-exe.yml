@@ -6,6 +6,12 @@ on:
     tags:
       - 'v*'               # Déclenchement automatique sur un tag ex: v1.2.0
 
+# GITHUB_TOKEN par défaut est en lecture seule sur ce dépôt : sans ce bloc,
+# l'étape de création/mise à jour de la release échoue avec
+# "Resource not accessible by integration".
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
@@ -42,9 +48,12 @@ jobs:
           retention-days: 30
 
       # Cette étape ne s'exécute que si le workflow a été déclenché par un tag v*
+      # Si une release existe déjà pour ce tag (ex: créée manuellement avec
+      # ses propres notes), cette action y ajoute juste l'EXE en asset sans
+      # toucher au reste — pas de generate_release_notes pour ne pas écraser
+      # des notes de release déjà écrites à la main.
       - name: Création de la release GitHub
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/claudeping.exe
-          generate_release_notes: true
