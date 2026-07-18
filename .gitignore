@@ -1,0 +1,19 @@
+# Artefacts de build PyInstaller — les binaires distribués vivent dans
+# les GitHub Releases, pas dans le dépôt (voir README).
+/build/
+/dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environnements virtuels
+.venv/
+venv/
+
+# Données runtime générées au lancement (log, état, verrou mono-instance)
+claudeping.log
+claudeping.log.*
+claudeping_state*.json
+claudeping.lock
