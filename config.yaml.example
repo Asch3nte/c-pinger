@@ -1,40 +1,81 @@
 # ============================================================
-# ClaudePing - Exemple de configuration
+# ClaudePing - Exemple de configuration (multi-comptes)
 # Copiez ce fichier en config.yaml et adaptez les valeurs
 # ============================================================
+#
+# `accounts` est une liste : un item = un compte Claude, avec son propre
+# cycle probe/ping, tourne dans son propre thread, en parallèle des autres.
+#
+# claude_config_dir isole entièrement les identifiants d'un compte
+# (variable d'environnement CLAUDE_CONFIG_DIR transmise au CLI `claude`).
+# Laissé vide, le compte utilise la config Claude par défaut du poste
+# (~/.claude). Deux comptes ne doivent JAMAIS pointer vers le même dossier.
+#
+# Pour se connecter à un compte isolé en ligne de commande :
+#   CLAUDE_CONFIG_DIR=~/.claude-pro claude auth login
+# (ou utilisez le bouton "Se connecter" du panneau du compte dans l'UI,
+# qui applique automatiquement le bon CLAUDE_CONFIG_DIR).
 
-probe:
-  # Fréquence des probes (en minutes) pour détecter si le quota est atteint
-  interval_minutes: 30
-  # Modèle utilisé pour les probes (le plus léger possible)
-  model: "haiku"
-  # Message envoyé lors du probe
-  message: "reply with just: ok"
+accounts:
+  - name: "perso"
+    # Vide = config Claude par défaut du poste (~/.claude)
+    claude_config_dir: ""
+    # Chemin vers l'exécutable Claude Code CLI (optionnel).
+    # Laissez "claude" si la commande est dans le PATH.
+    claude_executable: "claude"
+    probe:
+      # Fréquence des probes (en minutes) pour détecter si le quota est atteint
+      interval_minutes: 30
+      # Modèle utilisé pour les probes (le plus léger possible)
+      model: "haiku"
+      # Message envoyé lors du probe
+      message: "reply with just: ok"
+    ping:
+      # Message envoyé lors du vrai ping au moment du reset du quota
+      message: "reply with just: ok"
+      # Modèle utilisé pour le ping
+      model: "haiku"
+    fallback:
+      # Activer le mode fallback (ping à heure fixe si mode intelligent échoue)
+      enabled: true
+      # Heure du ping fallback (format HH:MM)
+      time: "07:00"
+      # Timezone pour le fallback
+      timezone: "Europe/Brussels"
+    notifications:
+      # Activer les notifications desktop
+      enabled: true
+      # Notifier quand le quota est détecté comme atteint
+      on_quota_detected: true
+      # Notifier quand le ping est envoyé avec succès
+      on_ping_sent: true
+      # Notifier en cas d'erreur
+      on_error: false
 
-ping:
-  # Message envoyé lors du vrai ping au moment du reset du quota
-  message: "reply with just: ok"
-  # Modèle utilisé pour le ping
-  model: "haiku"
+  # Second exemple de compte : dossier de config Claude isolé, pour faire
+  # tourner un compte "pro" en parallèle du compte "perso" ci-dessus.
+  # - name: "pro"
+  #   claude_config_dir: "~/.claude-pro"
+  #   claude_executable: "claude"
+  #   probe:
+  #     interval_minutes: 30
+  #     model: "haiku"
+  #     message: "reply with just: ok"
+  #   ping:
+  #     message: "reply with just: ok"
+  #     model: "haiku"
+  #   fallback:
+  #     enabled: true
+  #     time: "07:00"
+  #     timezone: "Europe/Brussels"
+  #   notifications:
+  #     enabled: true
+  #     on_quota_detected: true
+  #     on_ping_sent: true
+  #     on_error: false
 
-fallback:
-  # Activer le mode fallback (ping à heure fixe si mode intelligent échoue)
-  enabled: true
-  # Heure du ping fallback (format HH:MM)
-  time: "07:00"
-  # Timezone pour le fallback
-  timezone: "Europe/Brussels"
-
-notifications:
-  # Activer les notifications desktop
-  enabled: true
-  # Notifier quand le quota est détecté comme atteint
-  on_quota_detected: true
-  # Notifier quand le ping est envoyé avec succès
-  on_ping_sent: true
-  # Notifier en cas d'erreur
-  on_error: false
-
+# Logging global, partagé entre tous les comptes (chaque ligne est
+# préfixée par [nom_compte] pour rester lisible).
 logging:
   # Niveau de log : DEBUG, INFO, WARNING, ERROR
   level: "INFO"
@@ -44,7 +85,3 @@ logging:
   max_bytes: 1048576
   # Nombre de fichiers de backup conservés
   backup_count: 3
-
-# Chemin vers l'exécutable Claude Code CLI (optionnel).
-# Laissez "claude" si la commande est dans le PATH.
-claude_executable: "claude"

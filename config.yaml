@@ -1,46 +1,32 @@
 # ============================================================
-# ClaudePing - Configuration
-# Copiez ce fichier en config.yaml et adaptez les valeurs
+# ClaudePing - Configuration (multi-comptes)
+# Voir config.yaml.example pour la documentation complète et un
+# exemple de second compte avec dossier de config isolé.
 # ============================================================
 
-probe:
-  # Fréquence des probes (en minutes) pour détecter si le quota est atteint
-  interval_minutes: 30
-  # Modèle utilisé pour les probes (le plus léger possible)
-  model: "haiku"
-  # Message envoyé lors du probe
-  message: "reply with just: ok"
-
-ping:
-  # Message envoyé lors du vrai ping au moment du reset du quota
-  message: "reply with just: ok"
-  # Modèle utilisé pour le ping
-  model: "haiku"
-
-fallback:
-  # Activer le mode fallback (ping à heure fixe si mode intelligent échoue)
-  enabled: true
-  # Heure du ping fallback (format HH:MM)
-  time: "07:00"
-  # Timezone pour le fallback
-  timezone: "Europe/Brussels"
-
-notifications:
-  # Activer les notifications desktop
-  enabled: true
-  # Notifier quand le quota est détecté comme atteint
-  on_quota_detected: true
-  # Notifier quand le ping est envoyé avec succès
-  on_ping_sent: true
-  # Notifier en cas d'erreur
-  on_error: false
+accounts:
+  - name: "default"
+    claude_config_dir: ""
+    claude_executable: "claude"
+    probe:
+      interval_minutes: 30
+      model: "haiku"
+      message: "reply with just: ok"
+    ping:
+      message: "reply with just: ok"
+      model: "haiku"
+    fallback:
+      enabled: true
+      time: "07:00"
+      timezone: "Europe/Brussels"
+    notifications:
+      enabled: true
+      on_quota_detected: true
+      on_ping_sent: true
+      on_error: false
 
 logging:
-  # Niveau de log : DEBUG, INFO, WARNING, ERROR
   level: "INFO"
-  # Fichier de log (chemin relatif ou absolu)
   file: "claudeping.log"
-  # Taille max du fichier avant rotation (en bytes, défaut 1MB)
   max_bytes: 1048576
-  # Nombre de fichiers de backup conservés
   backup_count: 3

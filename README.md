@@ -12,6 +12,11 @@ Claude Pro fonctionne avec un système de quota par session de 5h :
 ClaudePing surveille votre quota en arrière-plan et envoie automatiquement un
 message minimal dès que le reset est disponible, maximisant votre temps de quota.
 
+ClaudePing gère **plusieurs comptes Claude en parallèle** : chaque compte a
+son propre cycle probe/ping, tourne dans son propre thread, et peut être
+totalement isolé des autres (identifiants séparés). Voir
+[Plusieurs comptes Claude en parallèle](#plusieurs-comptes-claude-en-parallèle).
+
 ## Trois concepts clés
 
 | Concept | Rôle | Appelle Claude ? |
@@ -115,17 +120,20 @@ python main.py --ui        # ou double-clic sur l'exécutable
 ```
 
 L'interface affiche :
-- **Onglet Statut** : état du service, prochain ping, quotas session/hebdo/mensuel, et tous les paramètres configurables
-- **Onglet Logs** : logs en temps réel sans avoir à surveiller le terminal
+- **Un onglet par compte Claude** : état du service, prochain ping, quotas session/hebdo, et tous les paramètres configurables pour ce compte
+- **Onglet Logs** : logs en temps réel de tous les comptes (préfixés `[nom_compte]`), sans avoir à surveiller le terminal
+- **"+ Ajouter un compte"** (coin de la barre d'onglets) : voir [Plusieurs comptes Claude en parallèle](#plusieurs-comptes-claude-en-parallèle)
 
-Paramètres configurables depuis l'UI :
+Paramètres configurables par compte depuis l'UI :
 - **Probe quota toutes les N min** : fréquence d'interrogation de `claude /usage`
 - **Activer le fallback horaire** : ping de secours à heure fixe si la détection automatique échoue
 - **Heure de fallback (HH:MM)** : heure du ping de secours quotidien
 - **Claude CLI (exécutable)** : chemin vers le binaire `claude` si absent du PATH
-- **Se connecter / Se déconnecter** : lance `claude auth login` / `claude auth logout`
+- **Dossier de config Claude** : dossier d'identifiants isolé pour ce compte (vide = config par défaut du poste), avec bouton **Ouvrir dossier de config**
+- **Se connecter / Se déconnecter** : lance `claude auth login` / `claude auth logout` pour ce compte
 - **Ping immédiat** : force un ping maintenant
 - **Ping manuel ponctuel (HH:MM)** : programme un ping unique à une heure précise
+- **Supprimer ce compte** : arrête et retire ce compte
 
 ### Mode service (ligne de commande)
 
@@ -133,43 +141,119 @@ Paramètres configurables depuis l'UI :
 # Service background (mode par défaut depuis les sources)
 python main.py
 
-# Dashboard CLI
+# Dashboard CLI (un bloc par compte configuré)
 python main.py status
 
-# Forcer un ping immédiat
+# Forcer un ping immédiat sur tous les comptes
 python main.py ping-now
 ```
+
+## Plusieurs comptes Claude en parallèle
+
+ClaudePing peut faire tourner **autant de comptes Claude simultanés que
+vous le souhaitez** — chacun avec son propre cycle probe/ping, dans son
+propre thread, indépendant des autres.
+
+### Comment ça marche
+
+Le CLI `claude` respecte la variable d'environnement `CLAUDE_CONFIG_DIR`
+pour isoler entièrement son dossier de config (y compris les identifiants
+de connexion) : `CLAUDE_CONFIG_DIR=~/.claude-pro claude auth login`
+connecte un compte séparé de votre config Claude par défaut (`~/.claude`),
+sans jamais toucher à celle-ci. C'est le mécanisme officiel pour faire
+cohabiter plusieurs comptes Claude sur la même machine, et c'est celui
+qu'utilise ClaudePing pour chaque compte que vous ajoutez.
+
+### Depuis l'interface graphique
+
+- Chaque compte a son propre **onglet** (statut, réglages, logs regroupés
+  dans l'onglet "Logs" partagé, préfixés `[nom_compte]`).
+- Bouton **"+ Ajouter un compte"** (coin supérieur droit des onglets) :
+  demande un nom et, optionnellement, un dossier de config Claude dédié
+  (laissé vide = ce compte utilise la config Claude par défaut du poste).
+  Le compte est démarré immédiatement, en parallèle des autres.
+- Dans chaque onglet, champ **"Dossier de config Claude"** + bouton
+  **"Ouvrir dossier de config"** : ouvre ce dossier dans l'explorateur de
+  fichiers du système (Nautilus/Explorer/Finder…), pour inspecter ou
+  gérer manuellement les fichiers du compte (identifiants, historique…).
+- Bouton **"Se connecter"** du panneau d'un compte : lance
+  `claude auth login` avec le `CLAUDE_CONFIG_DIR` de ce compte — la
+  fenêtre de connexion navigateur authentifie bien ce compte-là, pas le
+  compte par défaut du poste.
+- Bouton **"Supprimer ce compte"** : arrête son scheduler et le retire de
+  `config.yaml` (les fichiers d'état/logs existants ne sont pas
+  supprimés du disque).
+
+### Depuis `config.yaml`
+
+Voir [`config.yaml.example`](config.yaml.example) pour la référence
+complète. En résumé, `accounts` est une liste, un item = un compte :
+
+```yaml
+accounts:
+  - name: "perso"
+    claude_config_dir: ""              # vide = config Claude par défaut du poste
+    claude_executable: "claude"
+    probe: { interval_minutes: 30, model: haiku, message: "reply with just: ok" }
+    ping: { model: haiku, message: "reply with just: ok" }
+    fallback: { enabled: true, time: "07:00", timezone: "Europe/Brussels" }
+    notifications: { enabled: true, on_quota_detected: true, on_ping_sent: true, on_error: false }
+
+  - name: "pro"
+    claude_config_dir: "~/.claude-pro"  # dossier isolé → compte totalement séparé
+    claude_executable: "claude"
+    probe: { interval_minutes: 30, model: haiku, message: "reply with just: ok" }
+    ping: { model: haiku, message: "reply with just: ok" }
+    fallback: { enabled: true, time: "07:00", timezone: "Europe/Brussels" }
+    notifications: { enabled: true, on_quota_detected: true, on_ping_sent: true, on_error: false }
+
+logging:               # global, partagé entre tous les comptes
+  level: INFO
+  file: claudeping.log
+  max_bytes: 1048576
+  backup_count: 3
+```
+
+`python main.py status` et `python main.py ping-now` affichent/agissent
+sur tous les comptes configurés, un dashboard par compte.
+
+### Migration depuis une configuration mono-compte
+
+Aucune action requise : un `config.yaml` à l'ancien format (sans clé
+`accounts`) continue de fonctionner tel quel — il est chargé comme un
+unique compte nommé `default`, avec ses fichiers `claudeping_state.json`
+et `claudeping.log` habituels. Le fichier n'est réécrit au nouveau format
+qu'au premier enregistrement des réglages depuis l'UI.
 
 ## Configuration (`config.yaml`)
 
 ```yaml
-probe:
-  interval_minutes: 30    # Fréquence des probes (appels à claude /usage)
-  model: haiku            # Modèle le plus léger pour les probes
-  message: "reply with just: ok"
+accounts:
+  - name: default
+    claude_config_dir: ""     # vide = config Claude par défaut du poste
+    claude_executable: claude # Chemin complet si 'claude' n'est pas dans le PATH
+    probe:
+      interval_minutes: 30    # Fréquence des probes (appels à claude /usage)
+      model: haiku            # Modèle le plus léger pour les probes
+      message: "reply with just: ok"
+    ping:
+      model: haiku
+      message: "reply with just: ok"
+    fallback:
+      enabled: true
+      time: "07:00"           # Heure fixe si le probe échoue
+      timezone: "Europe/Brussels"
+    notifications:
+      enabled: true
+      on_quota_detected: true
+      on_ping_sent: true
+      on_error: false
 
-ping:
-  model: haiku
-  message: "reply with just: ok"
-
-fallback:
-  enabled: true
-  time: "07:00"           # Heure fixe si le probe échoue
-  timezone: "Europe/Brussels"
-
-notifications:
-  enabled: true
-  on_quota_detected: true
-  on_ping_sent: true
-  on_error: false
-
-logging:
+logging:                      # global, partagé entre tous les comptes
   level: INFO
-  file: claudeping.log    # Chemin relatif au dossier d'exécution
-  max_bytes: 1048576      # 1 MB avant rotation
+  file: claudeping.log        # Chemin relatif au dossier d'exécution
+  max_bytes: 1048576          # 1 MB avant rotation
   backup_count: 3
-
-claude_executable: claude  # Chemin complet si 'claude' n'est pas dans le PATH
 ```
 
 ## Dashboard CLI
@@ -191,10 +275,17 @@ claude_executable: claude  # Chemin complet si 'claude' n'est pas dans le PATH
 
 ## Logs
 
+Chaque ligne de log est préfixée par `[nom_compte]` pour rester lisible
+quand plusieurs comptes tournent en parallèle. Ce tag est en plus **coloré
+par compte** (couleur stable, assignée à la première rencontre du nom) :
+dans l'onglet Logs de l'UI, et dans un terminal couleur (via codes ANSI)
+en mode service. Le fichier `claudeping.log` (JSON Lines) contient aussi
+un champ structuré `"account"` par entrée, pratique pour filtrer/grep.
+
 Les logs sont écrits simultanément :
-- Dans l'**onglet Logs** de l'interface graphique (temps réel)
+- Dans l'**onglet Logs** de l'interface graphique (temps réel, tag coloré)
 - Dans le fichier `claudeping.log` (JSON Lines, avec rotation automatique)
-- Dans le **terminal** si lancé depuis une console
+- Dans le **terminal** si lancé depuis une console (coloré si le terminal le supporte)
 
 ```bash
 # Suivre les logs bruts (Linux)
@@ -228,6 +319,37 @@ pip install -r requirements.txt pyinstaller
 pyinstaller claudeping_windows.spec --distpath dist\windows
 # → dist\windows\ClaudePing.exe  (~70 MB, autonome, sans console)
 ```
+
+## Instance unique
+
+ClaudePing empêche de faire tourner plusieurs instances longue-durée
+(`--service` et/ou `--ui`, dans n'importe quelle combinaison) en même
+temps sur le même poste — sans ça, deux instances scheduleraient et
+enverraient chacune leurs propres pings/notifications pour les mêmes
+comptes, causant des notifications en double voire des pings envoyés
+plusieurs fois. Ce verrou est au niveau de l'OS (pas un simple fichier
+PID) : si une instance précédente a planté, il est relâché automatiquement,
+sans nettoyage manuel.
+
+**Relancer `--ui` pendant qu'une instance UI tourne déjà réaffiche sa
+fenêtre** (visible, masquée en tray, ou masquée sans tray) au lieu
+d'échouer — utile en particulier sur Linux quand l'icône system tray
+n'est pas disponible (paquets de notification manquants) : fermer la
+fenêtre (croix) la masque toujours en arrière-plan, la relancer
+(double-clic sur l'exécutable, raccourci…) la fait réapparaître. Le seul
+moyen d'arrêter vraiment ClaudePing est le menu **Fichier → Quitter** (ou
+"Quitter" dans le menu du tray s'il est disponible) — pas besoin de tray
+pour ça non plus, le menu Fichier est toujours présent dans la fenêtre.
+
+Si l'instance déjà lancée est un `--service` headless (sans interface —
+ex : démarré via systemd/Planificateur de tâches), relancer `--ui` ne
+peut évidemment rien réafficher : le message l'indique explicitement et
+invite à arrêter le service ou à utiliser `claudeping status` /
+`claudeping ping-now` en ligne de commande.
+
+Les commandes ponctuelles `status` et `ping-now` ne sont pas concernées
+par ce verrou (elles ne lancent pas de scheduler en tâche de fond) et
+peuvent être utilisées librement même pendant qu'une instance tourne.
 
 ## Dépannage
 

@@ -6,6 +6,7 @@ import logging
 import logging.handlers
 import json
 import sys
+import threading
 import traceback
 from collections import deque
 from datetime import datetime, timezone
@@ -73,10 +74,10 @@ def setup_logger(
     file_handler.setFormatter(JsonLineFormatter())
     logger.addHandler(file_handler)
 
-    # Handler console (format humain)
+    # Handler console (format humain, coloré par compte dans un vrai terminal)
     console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(
-        logging.Formatter(
+        ColorConsoleFormatter(
             fmt="%(asctime)s [%(levelname)s] %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
@@ -89,6 +90,72 @@ def setup_logger(
 def get_logger() -> logging.Logger:
     """Retourne le logger ClaudePing (après setup_logger appelé)."""
     return logging.getLogger("claudeping")
+
+
+class AccountLoggerAdapter(logging.LoggerAdapter):
+    """Préfixe chaque message par [nom_compte] et ajoute extra={"account": nom}.
+
+    Permet à un même logger/fichier de log partagé de rester lisible quand
+    plusieurs comptes tournent en parallèle.
+    """
+
+    def __init__(self, logger: logging.Logger, account_name: str) -> None:
+        super().__init__(logger, {"account": account_name})
+
+    def process(self, msg, kwargs):
+        extra = {**self.extra, **kwargs.get("extra", {})}
+        kwargs["extra"] = extra
+        return f"[{self.extra['account']}] {msg}", kwargs
+
+
+# Palette (code ANSI console, couleur hex pour l'UI) partagée entre le
+# terminal et l'onglet Logs de l'UI : chaque compte se voit assigner une
+# couleur stable (dérivée de son nom), pour distinguer d'un coup d'œil
+# les logs de plusieurs comptes qui tournent en parallèle.
+ACCOUNT_COLOR_PALETTE: list[tuple[int, str]] = [
+    (31, "#c0392b"),   # rouge
+    (32, "#2e8b40"),   # vert
+    (34, "#2980b9"),   # bleu
+    (35, "#8e44ad"),   # violet
+    (36, "#16a085"),   # turquoise
+    (33, "#b8860b"),   # ambre
+    (91, "#d63384"),   # rose
+    (94, "#00838f"),   # cyan foncé
+]
+
+
+_account_color_assignments: dict[str, int] = {}
+_account_color_lock = threading.Lock()
+
+
+def account_color(account_name: str) -> tuple[int, str]:
+    """Retourne (code_ansi, couleur_hex) pour ce nom de compte.
+
+    Les couleurs sont assignées dans l'ordre de première rencontre (pas par
+    hash du nom) : tant qu'il y a ≤ 8 comptes actifs, chacun a une couleur
+    garantie unique — deux noms proches ("perso"/"pro") ne se retrouvent
+    jamais avec la même couleur. Au-delà de 8 comptes simultanés, la
+    palette boucle. Thread-safe (les comptes logguent depuis des threads
+    différents).
+    """
+    with _account_color_lock:
+        index = _account_color_assignments.get(account_name)
+        if index is None:
+            index = len(_account_color_assignments) % len(ACCOUNT_COLOR_PALETTE)
+            _account_color_assignments[account_name] = index
+    return ACCOUNT_COLOR_PALETTE[index]
+
+
+class ColorConsoleFormatter(logging.Formatter):
+    """Colore toute la ligne selon le compte (extra 'account'), en terminal only."""
+
+    def format(self, record: logging.LogRecord) -> str:
+        base = super().format(record)
+        account = getattr(record, "account", None)
+        if account and sys.stdout.isatty():
+            ansi_code, _ = account_color(account)
+            return f"\x1b[{ansi_code}m{base}\x1b[0m"
+        return base
 
 
 class GUILogHandler(logging.Handler):

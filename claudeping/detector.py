@@ -4,6 +4,7 @@ Détection du quota et récupération de l'heure de reset via `claude -p "/usage
 
 from __future__ import annotations
 import json
+import logging
 import re
 import subprocess
 from dataclasses import dataclass
@@ -202,7 +203,7 @@ def _parse_cli_auth_status(stdout: str, stderr: str | None = None) -> str:
     return "inconnu"
 
 
-def _check_auth_status_json(executable: str) -> str | None:
+def _check_auth_status_json(executable: str, env: dict | None = None) -> str | None:
     """Retourne l'état d'auth via `claude auth status` (JSON) ou None si indisponible."""
     executable = _resolve_executable(executable)
     try:
@@ -213,6 +214,7 @@ def _check_auth_status_json(executable: str) -> str | None:
             timeout=10,
             encoding="utf-8",
             errors="replace",
+            env=env,
         )
         raw = result.stdout.strip()
         if raw:
@@ -223,14 +225,19 @@ def _check_auth_status_json(executable: str) -> str | None:
     return None
 
 
-def check_claude_cli(executable: str = "claude") -> QuotaInfo:
+def check_claude_cli(
+    executable: str = "claude",
+    env: dict | None = None,
+    log: logging.Logger | logging.LoggerAdapter | None = None,
+) -> QuotaInfo:
     """Vérifie la disponibilité du CLI et retourne l'état auth/quota si possible."""
+    log = log or logger
     executable = _resolve_executable(executable)
     # Auth status fiable via `claude auth status` (JSON)
-    auth_status_real = _check_auth_status_json(executable)
+    auth_status_real = _check_auth_status_json(executable, env=env)
 
     cmd = [executable, "-p", "/usage", "--model", "haiku"]
-    logger.debug(f"Vérification CLI : {' '.join(cmd)}")
+    log.debug(f"Vérification CLI : {' '.join(cmd)}")
 
     try:
         result = subprocess.run(
@@ -240,6 +247,7 @@ def check_claude_cli(executable: str = "claude") -> QuotaInfo:
             timeout=CLI_TIMEOUT,
             encoding="utf-8",
             errors="replace",
+            env=env,
         )
     except FileNotFoundError:
         return QuotaInfo(
@@ -295,12 +303,18 @@ def _resolve_executable(executable: str) -> str:
     return executable
 
 
-def execute_claude_auth(executable: str, action: str) -> tuple[bool, str]:
+def execute_claude_auth(
+    executable: str,
+    action: str,
+    env: dict | None = None,
+    log: logging.Logger | logging.LoggerAdapter | None = None,
+) -> tuple[bool, str]:
     """Tente d'exécuter `claude auth login` ou `claude auth logout`."""
+    log = log or logger
     executable = _resolve_executable(executable)
     cmd = [executable, "auth", action]
     timeout = CLI_AUTH_TIMEOUT if action == "login" else CLI_TIMEOUT
-    logger.debug(f"Exécution auth CLI : {' '.join(cmd)}")
+    log.debug(f"Exécution auth CLI : {' '.join(cmd)}")
     try:
         result = subprocess.run(
             cmd,
@@ -309,6 +323,7 @@ def execute_claude_auth(executable: str, action: str) -> tuple[bool, str]:
             timeout=timeout,
             encoding="utf-8",
             errors="replace",
+            env=env,
         )
         output = (result.stdout or "") + (result.stderr or "")
         success = result.returncode == 0
@@ -321,12 +336,18 @@ def execute_claude_auth(executable: str, action: str) -> tuple[bool, str]:
         return False, f"Erreur OS : {e}"
 
 
-def run_usage_check(executable: str = "claude") -> QuotaInfo:
+def run_usage_check(
+    executable: str = "claude",
+    env: dict | None = None,
+    log: logging.Logger | logging.LoggerAdapter | None = None,
+) -> QuotaInfo:
     """
     Lance `claude -p "/usage"` et retourne l'état du quota.
 
     Args:
         executable: Chemin vers l'exécutable Claude Code CLI.
+        env: Environnement des sous-process (CLAUDE_CONFIG_DIR pour isoler un compte).
+        log: Logger à utiliser (par défaut le logger du module).
 
     Returns:
         QuotaInfo avec reset_at en UTC si parsé.
@@ -334,7 +355,7 @@ def run_usage_check(executable: str = "claude") -> QuotaInfo:
     Raises:
         DetectorError: CLI inaccessible, timeout.
     """
-    status = check_claude_cli(executable)
+    status = check_claude_cli(executable, env=env, log=log)
     if not status.cli_available:
         raise DetectorError("Claude Code CLI introuvable.")
     if status.auth_status == "déconnecté":

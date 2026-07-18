@@ -1,17 +1,36 @@
 """Service backend de ClaudePing.
 
-Ce module expose une couche de service qui permet à une UI ou à un mode
-service de démarrer le scheduler, de consulter l'état et de piloter le ping.
+Ce module expose deux couches :
+
+- `AccountService` : pilote le scheduler d'un seul compte Claude (démarrage,
+  arrêt, ping manuel, login/logout, réglages).
+- `ClaudePingManager` : gère une collection d'`AccountService`, un par
+  compte défini dans config.yaml, démarrés simultanément. C'est le point
+  d'entrée utilisé par l'UI et le mode service en ligne de commande.
 """
 
 from __future__ import annotations
 
+import os
+import re
+import subprocess
+import sys
 import threading
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
+from typing import Callable
 
-from .config import ConfigError, load_config
+from .config import (
+    DEFAULT_ACCOUNT_NAME,
+    AccountConfig,
+    AppConfig,
+    ConfigError,
+    build_account_env,
+    load_config,
+    resolve_account_config_dir,
+    save_config,
+)
 from .detector import QuotaInfo, check_claude_cli, execute_claude_auth
 from .logger import get_logger
 from .scheduler import PingResult, Scheduler
@@ -22,6 +41,7 @@ logger = get_logger()
 
 @dataclass
 class ServiceStatus:
+    account_name: str
     running: bool
     next_ping_at: datetime | None
     last_ping_at: datetime | None
@@ -29,6 +49,7 @@ class ServiceStatus:
     fallback_enabled: bool
     fallback_time: str
     claude_executable: str
+    claude_config_dir: str
     last_probe_at: datetime | None
     quota_hit: bool | None
     session_pct: int | None
@@ -42,29 +63,40 @@ class ServiceStatus:
     probe_interval_minutes: int = 30
 
 
-class ClaudePingService:
+class AccountService:
+    """Pilote le cycle probe/ping d'un seul compte Claude."""
+
     def __init__(
         self,
-        config_path: Path | str = Path("config.yaml"),
-        state_path: Path | str = Path("claudeping_state.json"),
+        account: AccountConfig,
+        state: StateManager,
+        on_change: Callable[[], None] | None = None,
     ) -> None:
-        self.config_path = Path(config_path)
-        self.state_path = Path(state_path)
-        self.config = load_config(self.config_path)
-        self.state = StateManager(self.state_path)
-        self.scheduler = Scheduler(self.config, self.state)
+        self.account = account
+        self.state = state
+        self.scheduler = Scheduler(account, state)
+        self._on_change = on_change
         self._thread: threading.Thread | None = None
         self._started = False
+
+    @property
+    def name(self) -> str:
+        return self.account.name
+
+    # Alias de compat pour le code qui référence encore `.config`
+    @property
+    def config(self) -> AccountConfig:
+        return self.account
 
     def start(self) -> None:
         if self._started:
             return
 
-        logger.info("Démarrage du service ClaudePing...")
+        self.scheduler.logger.info("Démarrage du service ClaudePing...")
         self._thread = threading.Thread(
             target=self.scheduler.run,
             daemon=True,
-            name="ClaudePingScheduler",
+            name=f"ClaudePingScheduler-{self.account.name}",
         )
         self._thread.start()
         self._started = True
@@ -73,7 +105,7 @@ class ClaudePingService:
         if not self._started:
             return
 
-        logger.info("Arrêt du service ClaudePing...")
+        self.scheduler.logger.info("Arrêt du service ClaudePing...")
         self.scheduler.stop()
         if self._thread is not None:
             self._thread.join(timeout=timeout)
@@ -89,65 +121,88 @@ class ClaudePingService:
         return self.scheduler.schedule_manual_ping(time_str)
 
     def refresh_claude_status(self) -> QuotaInfo:
-        status = check_claude_cli(self.config.claude_executable)
+        status = check_claude_cli(
+            self.account.claude_executable,
+            env=self.scheduler.env,
+            log=self.scheduler.logger,
+        )
         self.scheduler.last_quota_info = status
         self.state.clear_last_notified_ping_at()
         return status
 
     def login_claude(self) -> tuple[bool, str]:
-        success, message = execute_claude_auth(self.config.claude_executable, "login")
+        success, message = execute_claude_auth(
+            self.account.claude_executable,
+            "login",
+            env=self.scheduler.env,
+            log=self.scheduler.logger,
+        )
         if success:
             self.refresh_claude_status()
         return success, message
 
     def logout_claude(self) -> tuple[bool, str]:
-        success, message = execute_claude_auth(self.config.claude_executable, "logout")
+        success, message = execute_claude_auth(
+            self.account.claude_executable,
+            "logout",
+            env=self.scheduler.env,
+            log=self.scheduler.logger,
+        )
         if success:
             self.refresh_claude_status()
         return success, message
 
     def set_fallback_enabled(self, enabled: bool, persist: bool = True) -> None:
-        self.config.fallback.enabled = enabled
-        logger.info(f"Fallback {'activé' if enabled else 'désactivé'} via UI.")
+        self.account.fallback.enabled = enabled
+        self.scheduler.logger.info(f"Fallback {'activé' if enabled else 'désactivé'} via UI.")
         if persist:
-            self._save_config()
+            self._notify_change()
 
     def set_fallback_time(self, time_str: str, persist: bool = True) -> None:
-        self.config.fallback.time = time_str
-        logger.info(f"Heure de fallback mise à jour : {time_str}")
+        self.account.fallback.time = time_str
+        self.scheduler.logger.info(f"Heure de fallback mise à jour : {time_str}")
         if persist:
-            self._save_config()
+            self._notify_change()
 
     def set_claude_executable(self, path: str, persist: bool = True) -> None:
-        self.config.claude_executable = path
-        logger.info(f"Chemin Claude Code CLI configuré : {path}")
+        self.account.claude_executable = path
+        self.scheduler.logger.info(f"Chemin Claude Code CLI configuré : {path}")
         if persist:
-            self._save_config()
+            self._notify_change()
+
+    def set_claude_config_dir(self, path: str, persist: bool = True) -> None:
+        self.account.claude_config_dir = path.strip()
+        self.scheduler.env = build_account_env(self.account)
+        self.scheduler.logger.info(
+            f"Dossier de config Claude configuré : {path or '(défaut du poste)'}"
+        )
+        if persist:
+            self._notify_change()
 
     def set_probe_interval(self, minutes: int, persist: bool = True) -> None:
-        self.config.probe.interval_minutes = max(1, minutes)
-        logger.info(f"Intervalle de probe configuré : {self.config.probe.interval_minutes} min")
+        self.account.probe.interval_minutes = max(1, minutes)
+        self.scheduler.logger.info(
+            f"Intervalle de probe configuré : {self.account.probe.interval_minutes} min"
+        )
         if persist:
-            self._save_config()
+            self._notify_change()
 
-    def _save_config(self) -> None:
-        from .config import save_config
-
-        try:
-            save_config(self.config, self.config_path)
-        except Exception as e:
-            logger.error(f"Impossible de sauvegarder la configuration : {e}")
+    def _notify_change(self) -> None:
+        if self._on_change is not None:
+            self._on_change()
 
     def get_status(self) -> ServiceStatus:
         quota_info = self.scheduler.last_quota_info
         return ServiceStatus(
+            account_name=self.account.name,
             running=self.is_running(),
             next_ping_at=self.state.get_ping_scheduled_at(),
             last_ping_at=self.state.get_last_ping_at(),
             ping_count=self.state.get_ping_count(),
-            fallback_enabled=self.config.fallback.enabled,
-            fallback_time=self.config.fallback.time,
-            claude_executable=self.config.claude_executable,
+            fallback_enabled=self.account.fallback.enabled,
+            fallback_time=self.account.fallback.time,
+            claude_executable=self.account.claude_executable,
+            claude_config_dir=self.account.claude_config_dir,
             last_probe_at=self.scheduler.last_probe_at,
             quota_hit=quota_info.quota_hit if quota_info is not None else None,
             session_pct=quota_info.session_pct if quota_info is not None else None,
@@ -158,7 +213,7 @@ class ClaudePingService:
             cli_available=quota_info.cli_available if quota_info is not None else False,
             quota_status_session=self._compute_quota_status(quota_info),
             quota_status_weekly=self._compute_quota_status(quota_info, weekly=True),
-            probe_interval_minutes=self.config.probe.interval_minutes,
+            probe_interval_minutes=self.account.probe.interval_minutes,
         )
 
     def _compute_quota_status(self, quota_info: QuotaInfo | None, weekly: bool = False) -> str:
@@ -176,10 +231,121 @@ class ClaudePingService:
             return "ok" if quota_info.session_pct < 100 else "quota atteint"
         return "—"
 
-    @classmethod
-    def create(cls, config_path: Path | str = Path("config.yaml"), state_path: Path | str = Path("claudeping_state.json")) -> ClaudePingService:
+
+def _open_in_file_manager(path: Path) -> None:
+    """Ouvre `path` dans l'explorateur de fichiers du système d'exploitation."""
+    if sys.platform == "win32":
+        os.startfile(str(path))  # type: ignore[attr-defined]
+    elif sys.platform == "darwin":
+        subprocess.Popen(["open", str(path)])
+    else:
+        subprocess.Popen(["xdg-open", str(path)])
+
+
+def _slugify_account_name(name: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "_", name.strip())
+    return slug or "compte"
+
+
+class ClaudePingManager:
+    """Gère l'ensemble des comptes Claude configurés, démarrés en parallèle."""
+
+    def __init__(
+        self,
+        config_path: Path | str = Path("config.yaml"),
+        base_dir: Path | str | None = None,
+    ) -> None:
+        self.config_path = Path(config_path)
+        self.base_dir = Path(base_dir) if base_dir is not None else self.config_path.parent
+        self.config: AppConfig = load_config(self.config_path)
+        self.accounts: dict[str, AccountService] = {}
+        for account in self.config.accounts:
+            self._create_account_service(account)
+
+    # ------------------------------------------------------------------
+    # Cycle de vie
+    # ------------------------------------------------------------------
+
+    def start_all(self) -> None:
+        for service in self.accounts.values():
+            service.start()
+
+    def stop_all(self, timeout: float = 5.0) -> None:
+        for service in self.accounts.values():
+            service.stop(timeout=timeout)
+
+    def is_any_running(self) -> bool:
+        return any(s.is_running() for s in self.accounts.values())
+
+    # ------------------------------------------------------------------
+    # Gestion des comptes
+    # ------------------------------------------------------------------
+
+    def _state_path_for(self, account: AccountConfig) -> Path:
+        # Compat : le compte auto-migré "default" garde le fichier d'état
+        # historique, pour ne rien casser chez les utilisateurs existants.
+        if account.name == DEFAULT_ACCOUNT_NAME:
+            return self.base_dir / "claudeping_state.json"
+        return self.base_dir / f"claudeping_state_{_slugify_account_name(account.name)}.json"
+
+    def _create_account_service(self, account: AccountConfig) -> AccountService:
+        state = StateManager(self._state_path_for(account))
+        service = AccountService(account, state, on_change=self._save_config)
+        self.accounts[account.name] = service
+        return service
+
+    def add_account(self, name: str, claude_config_dir: str = "") -> AccountService:
+        name = name.strip()
+        if not name:
+            raise ValueError("Le nom du compte ne peut pas être vide.")
+        if name in self.accounts:
+            raise ValueError(f"Un compte nommé '{name}' existe déjà.")
+
+        account = AccountConfig(name=name, claude_config_dir=claude_config_dir.strip())
+        self.config.accounts.append(account)
+        service = self._create_account_service(account)
+        self._save_config()
+        service.start()
+        logger.info(f"Compte '{name}' ajouté et démarré.")
+        return service
+
+    def remove_account(self, name: str) -> None:
+        service = self.accounts.pop(name, None)
+        if service is None:
+            return
+        service.stop()
+        self.config.accounts = [a for a in self.config.accounts if a.name != name]
+        self._save_config()
+        logger.info(f"Compte '{name}' supprimé.")
+
+    def open_account_config_dir(self, name: str) -> Path:
+        service = self.accounts[name]
+        path = resolve_account_config_dir(service.account)
+        path.mkdir(parents=True, exist_ok=True)
+        _open_in_file_manager(path)
+        return path
+
+    def get_status_all(self) -> dict[str, ServiceStatus]:
+        return {name: svc.get_status() for name, svc in self.accounts.items()}
+
+    # ------------------------------------------------------------------
+    # Persistance
+    # ------------------------------------------------------------------
+
+    def _save_config(self) -> None:
         try:
-            return cls(config_path=config_path, state_path=state_path)
+            save_config(self.config, self.config_path)
+        except Exception as e:
+            logger.error(f"Impossible de sauvegarder la configuration : {e}")
+
+    @classmethod
+    def create(
+        cls,
+        config_path: Path | str = Path("config.yaml"),
+        base_dir: Path | str | None = None,
+    ) -> ClaudePingManager:
+        try:
+            return cls(config_path=config_path, base_dir=base_dir)
         except ConfigError as e:
             logger.error(f"Impossible de charger la configuration : {e}")
             raise

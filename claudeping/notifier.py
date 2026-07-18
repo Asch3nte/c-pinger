@@ -53,38 +53,37 @@ def _notify(title: str, message: str, timeout: int = 8) -> None:
         logger.debug(f"Notification non envoyée (aucun backend disponible) : {title}")
 
 
-def notify_quota_detected(reset_at_local: str) -> None:
+def notify_quota_detected(account_name: str, reset_at_local: str) -> None:
     _notify(
-        title=f"{APP_NAME} — Quota atteint",
+        title=f"{APP_NAME} — Quota atteint [{account_name}]",
         message=f"Ping automatique schedulé à {reset_at_local}.",
     )
 
 
-def notify_ping_sent(sent_at_local: str, response: str) -> None:
+def notify_ping_sent(account_name: str, sent_at_local: str, response: str) -> None:
     _notify(
-        title=f"{APP_NAME} — Ping envoyé",
+        title=f"{APP_NAME} — Ping envoyé [{account_name}]",
         message=f"Compteur 5h démarré à {sent_at_local}. Réponse : {response}",
     )
 
 
-def notify_ping_failed(error: str) -> None:
+def notify_ping_failed(account_name: str, error: str) -> None:
     _notify(
-        title=f"{APP_NAME} — Ping échoué",
+        title=f"{APP_NAME} — Ping échoué [{account_name}]",
         message=f"Erreur : {error[:120]}",
     )
 
 
-def notify_error(error: str) -> None:
-    _notify(
-        title=f"{APP_NAME} — Erreur",
-        message=error[:150],
-    )
+def notify_error(error: str, account_name: str | None = None) -> None:
+    title = f"{APP_NAME} — Erreur" + (f" [{account_name}]" if account_name else "")
+    _notify(title=title, message=error[:150])
 
 
-def notify_service_started() -> None:
+def notify_service_started(account_count: int | None = None) -> None:
+    detail = f" ({account_count} compte(s))" if account_count is not None else ""
     _notify(
         title=f"{APP_NAME} — Démarré",
-        message="Le service de ping automatique est actif.",
+        message=f"Le service de ping automatique est actif{detail}.",
         timeout=5,
     )
 
