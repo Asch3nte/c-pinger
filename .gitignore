@@ -1,7 +1,6 @@
-# Artefacts de build PyInstaller — les binaires distribués vivent dans
-# les GitHub Releases, pas dans le dépôt (voir README).
+# Artefacts de build PyInstaller — le dossier de travail ne va jamais dans
+# le dépôt ; les binaires finaux (dist/) sont eux versionnés (voir README).
 /build/
-/dist/
 
 # Python
 __pycache__/
@@ -12,8 +11,10 @@ __pycache__/
 .venv/
 venv/
 
-# Données runtime générées au lancement (log, état, verrou mono-instance)
+# Données runtime générées au lancement à côté des binaires (config perso,
+# log, état, verrou mono-instance) — jamais les binaires eux-mêmes.
 claudeping.log
 claudeping.log.*
 claudeping_state*.json
 claudeping.lock
+/dist/*/config.yaml

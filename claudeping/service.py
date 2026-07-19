@@ -282,8 +282,19 @@ class ClaudePingManager:
     # ------------------------------------------------------------------
 
     def _state_path_for(self, account: AccountConfig) -> Path:
-        # Compat : le compte auto-migré "default" garde le fichier d'état
-        # historique, pour ne rien casser chez les utilisateurs existants.
+        # Compat : le compte auto-migré depuis l'ancien format mono-compte
+        # garde le fichier d'état historique (claudeping_state.json, sans
+        # suffixe), pour ne rien casser chez les utilisateurs existants.
+        #
+        # ATTENTION : ce test compare le NOM AFFICHÉ du compte au sentinel
+        # DEFAULT_ACCOUNT_NAME — donc si un compte explicite (format
+        # multi-comptes) est un jour nommé exactement comme ce sentinel, il
+        # hérite par erreur du fichier d'état legacy partagé et perd son
+        # propre historique (vécu : renommer le sentinel en "DEFAULT" a fait
+        # entrer en collision un compte réel nommé "DEFAULT", qui s'est
+        # brusquement retrouvé avec ping_count=0). Ne changez DEFAULT_ACCOUNT_NAME
+        # qu'en connaissance de cause, et ne renommez jamais un compte réel
+        # exactement comme sa valeur actuelle ("default").
         if account.name == DEFAULT_ACCOUNT_NAME:
             return self.base_dir / "claudeping_state.json"
         return self.base_dir / f"claudeping_state_{_slugify_account_name(account.name)}.json"
@@ -335,8 +346,11 @@ class ClaudePingManager:
     def _save_config(self) -> None:
         try:
             save_config(self.config, self.config_path)
-        except Exception as e:
-            logger.error(f"Impossible de sauvegarder la configuration : {e}")
+            logger.info(f"Configuration sauvegardée dans {self.config_path.resolve()}")
+        except Exception:
+            logger.exception(
+                f"Impossible de sauvegarder la configuration dans {self.config_path.resolve()}"
+            )
 
     @classmethod
     def create(

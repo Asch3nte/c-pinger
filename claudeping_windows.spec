@@ -10,6 +10,7 @@ a = Analysis(
     datas=[
         ('config.yaml.example', '.'),
         ('claudeping/', 'claudeping/'),
+        ('assets/', 'assets/'),
     ],
     hiddenimports=[
         'zoneinfo',
@@ -45,4 +46,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon='assets/icon.ico',
 )

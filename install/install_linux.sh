@@ -54,6 +54,35 @@ systemctl --user daemon-reload
 systemctl --user enable claudeping
 systemctl --user start claudeping
 
+# 6. Icône + lanceur .desktop (pour l'UI --ui, taskbar/dock/menu applications)
+echo "→ Installation de l'icône et du lanceur .desktop..."
+ICON_DIR_BASE="$HOME/.local/share/icons/hicolor"
+for size in 16 24 32 48 64 128 256 512; do
+    src="$INSTALL_DIR/assets/icon_${size}.png"
+    if [ -f "$src" ]; then
+        dest="$ICON_DIR_BASE/${size}x${size}/apps"
+        mkdir -p "$dest"
+        cp "$src" "$dest/claudeping.png"
+    fi
+done
+
+APPS_DIR="$HOME/.local/share/applications"
+mkdir -p "$APPS_DIR"
+cat > "$APPS_DIR/claudeping.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=ClaudePing
+Comment=Démarrage automatique du compteur de quota Claude Pro
+Exec=$VENV_DIR/bin/python $INSTALL_DIR/main.py --ui
+Icon=claudeping
+Terminal=false
+Categories=Utility;
+StartupWMClass=claudeping
+EOF
+
+command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$APPS_DIR" || true
+command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t "$ICON_DIR_BASE" 2>/dev/null || true
+
 echo ""
 echo "✅ ClaudePing installé et démarré !"
 echo ""
@@ -62,3 +91,6 @@ echo "  systemctl --user status claudeping    # Statut du service"
 echo "  journalctl --user -u claudeping -f    # Logs en temps réel"
 echo "  python3 $INSTALL_DIR/main.py status   # Dashboard CLI"
 echo "  python3 $INSTALL_DIR/main.py ping-now # Forcer un ping"
+echo ""
+echo "L'interface graphique (\"ClaudePing\") est disponible dans le menu"
+echo "applications de votre bureau, icône incluse."

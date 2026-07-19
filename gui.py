@@ -11,7 +11,7 @@ from typing import Callable
 from zoneinfo import ZoneInfo
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, Signal
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QGridLayout,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -26,11 +28,12 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QStyle,
+    QScrollArea,
     QStatusBar,
     QSystemTrayIcon,
     QTabWidget,
     QTextEdit,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -39,6 +42,20 @@ from claudeping.activation import ActivationServer
 from claudeping.logger import account_color, get_gui_log_handler, get_logger
 from claudeping.notifier import notify_running_in_background
 from claudeping.service import AccountService, ClaudePingManager
+
+
+def asset_path(name: str) -> str:
+    """Résout le chemin d'un fichier sous assets/, en source comme en bundle
+    PyInstaller (où les données embarquées vivent sous sys._MEIPASS)."""
+    if getattr(sys, "frozen", False):
+        base = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+    else:
+        base = Path(__file__).resolve().parent
+    return str(base / "assets" / name)
+
+
+def app_icon() -> QIcon:
+    return QIcon(asset_path("icon.png"))
 
 
 def format_timestamp(dt: datetime | None, tz: ZoneInfo) -> str:
@@ -117,6 +134,42 @@ class _AsyncWorker(QObject):
         self.finished.emit(self, result)
 
 
+class CollapsibleSection(QWidget):
+    """Section repliable, repliée par défaut — regroupe des réglages
+    secondaires (ex : configuration avancée Claude CLI) pour garder la
+    fenêtre compacte sans rien cacher définitivement."""
+
+    def __init__(self, title: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._title = title
+        self._toggle = QToolButton()
+        self._toggle.setCheckable(True)
+        self._toggle.setChecked(False)
+        self._toggle.setToolButtonStyle(Qt.ToolButtonTextOnly)
+        self._toggle.setStyleSheet("QToolButton { border: none; font-weight: 600; }")
+        self._toggle.toggled.connect(self._on_toggled)
+        self._update_text(False)
+
+        self._content = QWidget()
+        self._content.setVisible(False)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        layout.addWidget(self._toggle)
+        layout.addWidget(self._content)
+
+    def _update_text(self, checked: bool) -> None:
+        self._toggle.setText(f"{'▾' if checked else '▸'} {self._title}")
+
+    def _on_toggled(self, checked: bool) -> None:
+        self._update_text(checked)
+        self._content.setVisible(checked)
+
+    def set_content_layout(self, content_layout) -> None:
+        self._content.setLayout(content_layout)
+
+
 class AddAccountDialog(QDialog):
     """Petite boîte de dialogue pour ajouter un nouveau compte Claude."""
 
@@ -179,49 +232,56 @@ class AccountPanel(QWidget):
         self,
         manager: ClaudePingManager,
         service: AccountService,
-        on_removed,
     ) -> None:
         super().__init__()
         self.manager = manager
         self.service = service
-        self._on_removed = on_removed
         self._active_async = []  # garde (QThread, _AsyncWorker) en vie tant que ça tourne
+        # Champs modifiés par l'utilisateur mais pas encore enregistrés : le
+        # refresh périodique (5s) ne doit jamais les écraser, sinon la saisie
+        # est perdue avant même que l'utilisateur ait pu cliquer "Enregistrer".
+        self._dirty_fields: set[str] = set()
         self._build_ui()
+
+    def _mark_dirty(self, field: str) -> None:
+        self._dirty_fields.add(field)
 
     def _build_ui(self) -> None:
         self.status_label = QLabel("Chargement...")
         self.next_ping_label = QLabel("—")
         self.last_ping_label = QLabel("—")
         self.ping_count_label = QLabel("—")
-        self.quota_status_label = QLabel("—")
         self.session_quota_label = QLabel("—")
         self.weekly_quota_label = QLabel("—")
         self.cli_status_label = QLabel("—")
         self.last_probe_label = QLabel("—")
 
-        self.fallback_checkbox = QCheckBox(
-            "Activer le fallback horaire (ping de secours si la détection automatique échoue)"
+        self.fallback_checkbox = QCheckBox("Activer le fallback horaire")
+        self.fallback_checkbox.setToolTip(
+            "Ping de secours à heure fixe si la détection automatique du quota échoue."
         )
         self.fallback_time_input = QLineEdit()
+        self.fallback_time_input.setPlaceholderText("HH:MM")
+        self.fallback_time_input.setFixedWidth(70)
         self.probe_interval_input = QLineEdit()
-        self.probe_interval_input.setPlaceholderText("ex : 30")
-        self.probe_interval_input.setFixedWidth(60)
+        self.probe_interval_input.setPlaceholderText("30")
+        self.probe_interval_input.setFixedWidth(50)
         self.claude_path_input = QLineEdit()
         self.claude_path_input.setPlaceholderText("chemin vers l'exécutable claude ou 'claude'")
         self.config_dir_input = QLineEdit()
         self.config_dir_input.setPlaceholderText("vide = config Claude par défaut du poste")
         self.manual_time_input = QLineEdit()
+        self.manual_time_input.setPlaceholderText("HH:MM")
 
         self.claude_browse_button = QPushButton("Parcourir")
         self.config_dir_browse_button = QPushButton("Parcourir…")
-        self.open_config_dir_button = QPushButton("Ouvrir dossier de config")
+        self.open_config_dir_button = QPushButton("Ouvrir")
         self.check_cli_button = QPushButton("Vérifier CLI")
         self.login_button = QPushButton("Se connecter")
         self.logout_button = QPushButton("Se déconnecter")
         self.apply_button = QPushButton("Enregistrer la configuration")
         self.manual_ping_button = QPushButton("Ping immédiat")
         self.schedule_ping_button = QPushButton("Programmer le ping")
-        self.remove_account_button = QPushButton("Supprimer ce compte")
 
         self.claude_browse_button.clicked.connect(self._browse_claude_path)
         self.config_dir_browse_button.clicked.connect(self._browse_config_dir)
@@ -229,22 +289,58 @@ class AccountPanel(QWidget):
         self.check_cli_button.clicked.connect(self._check_cli_status)
         self.login_button.clicked.connect(self._login_claude)
         self.logout_button.clicked.connect(self._logout_claude)
-        self.apply_button.clicked.connect(self._apply_settings)
+        # NB : QPushButton.clicked émet un bool (checked=False) — connecter
+        # directement à _apply_settings(save_config: bool = True) ferait
+        # passer ce False comme save_config, donc appliquerait les réglages
+        # SANS jamais les persister sur disque. D'où le lambda qui l'ignore.
+        self.apply_button.clicked.connect(lambda _checked=False: self._apply_settings())
         self.manual_ping_button.clicked.connect(self._manual_ping)
         self.schedule_ping_button.clicked.connect(self._schedule_manual_ping)
-        self.remove_account_button.clicked.connect(self._remove_account)
 
-        status_layout = QFormLayout()
-        status_layout.addRow("Statut service :", self.status_label)
-        status_layout.addRow("Prochain ping :", self.next_ping_label)
-        status_layout.addRow("Dernier ping :", self.last_ping_label)
-        status_layout.addRow("Total pings :", self.ping_count_label)
-        status_layout.addRow("Quota (session / hebdo) :", self.quota_status_label)
-        status_layout.addRow("Quota session :", self.session_quota_label)
-        status_layout.addRow("Quota hebdo :", self.weekly_quota_label)
-        status_layout.addRow("Dernière probe :", self.last_probe_label)
+        # textEdited (contrairement à textChanged) n'est émis que sur une
+        # saisie utilisateur, jamais sur nos propres setText() de refresh —
+        # donc pas de faux-positif "dirty" quand refresh_status() réécrit
+        # un champ non modifié.
+        self.fallback_checkbox.toggled.connect(lambda _checked: self._mark_dirty("fallback_enabled"))
+        self.fallback_time_input.textEdited.connect(lambda _text: self._mark_dirty("fallback_time"))
+        self.probe_interval_input.textEdited.connect(lambda _text: self._mark_dirty("probe_interval"))
+        self.claude_path_input.textEdited.connect(lambda _text: self._mark_dirty("claude_path"))
+        self.config_dir_input.textEdited.connect(lambda _text: self._mark_dirty("config_dir"))
 
+        # Entrée dans un champ de réglage = sauvegarde immédiate, comme
+        # cliquer sur "Enregistrer la configuration".
+        self.fallback_time_input.returnPressed.connect(self._apply_settings)
+        self.probe_interval_input.returnPressed.connect(self._apply_settings)
+        self.claude_path_input.returnPressed.connect(self._apply_settings)
+        self.config_dir_input.returnPressed.connect(self._apply_settings)
+
+        # -- État (lecture seule) : grille 2 colonnes pour tenir sur peu de
+        # hauteur, sans doublon (le statut quota est fondu dans les % ).
+        status_box = QGroupBox("État")
+        status_grid = QGridLayout()
+        status_grid.setHorizontalSpacing(16)
+        status_grid.addWidget(QLabel("Statut service :"), 0, 0)
+        status_grid.addWidget(self.status_label, 0, 1)
+        status_grid.addWidget(QLabel("État CLI :"), 0, 2)
+        status_grid.addWidget(self.cli_status_label, 0, 3)
+        status_grid.addWidget(QLabel("Prochain ping :"), 1, 0)
+        status_grid.addWidget(self.next_ping_label, 1, 1)
+        status_grid.addWidget(QLabel("Dernier ping :"), 1, 2)
+        status_grid.addWidget(self.last_ping_label, 1, 3)
+        status_grid.addWidget(QLabel("Total pings :"), 2, 0)
+        status_grid.addWidget(self.ping_count_label, 2, 1)
+        status_grid.addWidget(QLabel("Dernière probe :"), 2, 2)
+        status_grid.addWidget(self.last_probe_label, 2, 3)
+        status_grid.addWidget(QLabel("Quota session :"), 3, 0)
+        status_grid.addWidget(self.session_quota_label, 3, 1)
+        status_grid.addWidget(QLabel("Quota hebdo :"), 3, 2)
+        status_grid.addWidget(self.weekly_quota_label, 3, 3)
+        status_box.setLayout(status_grid)
+
+        # -- Réglages principaux : ce qu'on ajuste le plus souvent.
+        settings_box = QGroupBox("Réglages")
         settings_layout = QFormLayout()
+        settings_layout.setFieldGrowthPolicy(QFormLayout.FieldsStayAtSizeHint)
 
         probe_layout = QHBoxLayout()
         probe_layout.addWidget(self.probe_interval_input)
@@ -252,55 +348,77 @@ class AccountPanel(QWidget):
         probe_layout.addStretch(1)
         settings_layout.addRow("Probe quota toutes les :", probe_layout)
 
-        settings_layout.addRow(self.fallback_checkbox)
-        settings_layout.addRow("Heure de fallback (HH:MM) :", self.fallback_time_input)
+        fallback_layout = QHBoxLayout()
+        fallback_layout.addWidget(self.fallback_checkbox)
+        fallback_layout.addSpacing(12)
+        fallback_layout.addWidget(QLabel("Heure :"))
+        fallback_layout.addWidget(self.fallback_time_input)
+        fallback_layout.addStretch(1)
+        settings_layout.addRow(fallback_layout)
+        settings_box.setLayout(settings_layout)
+
+        # -- Configuration Claude CLI : repliée par défaut (rarement
+        # modifiée une fois le compte configuré), pour garder la fenêtre
+        # compacte au quotidien.
+        claude_section = CollapsibleSection("Configuration Claude CLI")
+        claude_layout = QFormLayout()
+        claude_layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
 
         claude_path_layout = QHBoxLayout()
         claude_path_layout.addWidget(self.claude_path_input)
         claude_path_layout.addWidget(self.claude_browse_button)
         claude_path_layout.addWidget(self.check_cli_button)
-        settings_layout.addRow("Claude CLI (exécutable) :", claude_path_layout)
-        settings_layout.addRow("État CLI :", self.cli_status_label)
+        claude_layout.addRow("Exécutable CLI :", claude_path_layout)
 
         config_dir_layout = QHBoxLayout()
         config_dir_layout.addWidget(self.config_dir_input)
         config_dir_layout.addWidget(self.config_dir_browse_button)
         config_dir_layout.addWidget(self.open_config_dir_button)
-        settings_layout.addRow("Dossier de config Claude :", config_dir_layout)
+        claude_layout.addRow("Dossier de config :", config_dir_layout)
 
         auth_buttons_layout = QHBoxLayout()
         auth_buttons_layout.addWidget(self.login_button)
         auth_buttons_layout.addWidget(self.logout_button)
-        settings_layout.addRow(auth_buttons_layout)
+        auth_buttons_layout.addStretch(1)
+        claude_layout.addRow(auth_buttons_layout)
 
+        claude_section.set_content_layout(claude_layout)
+
+        # -- Ping manuel ponctuel.
+        manual_box = QGroupBox("Ping manuel ponctuel")
+        manual_box.setToolTip("Force un ping unique à l'heure indiquée (HH:MM).")
         manual_layout = QHBoxLayout()
         manual_layout.addWidget(self.manual_time_input)
         manual_layout.addWidget(self.schedule_ping_button)
+        manual_layout.addStretch(1)
+        manual_box.setLayout(manual_layout)
 
         buttons_layout = QHBoxLayout()
         buttons_layout.addWidget(self.apply_button)
         buttons_layout.addStretch(1)
         buttons_layout.addWidget(self.manual_ping_button)
 
+        content = QWidget()
+        content_layout = QVBoxLayout(content)
+        content_layout.setSpacing(10)
+        content_layout.addWidget(status_box)
+        content_layout.addWidget(settings_box)
+        content_layout.addWidget(claude_section)
+        content_layout.addWidget(manual_box)
+        content_layout.addLayout(buttons_layout)
+        content_layout.addStretch(1)
+
+        # Défilable : déplier "Configuration Claude CLI" (ou juste une
+        # fenêtre redimensionnée en dessous du confort) ne doit jamais
+        # comprimer/chevaucher le contenu — au pire ça scrolle.
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setWidget(content)
+
         layout = QVBoxLayout(self)
-        layout.addLayout(status_layout)
-        layout.addSpacing(20)
-        layout.addLayout(settings_layout)
-        layout.addSpacing(10)
-        layout.addWidget(QLabel(
-            "Ping manuel ponctuel (HH:MM) — force un ping unique à cette heure :"
-        ))
-        layout.addLayout(manual_layout)
-        layout.addSpacing(10)
-        layout.addLayout(buttons_layout)
-        layout.addSpacing(20)
-
-        remove_layout = QHBoxLayout()
-        remove_layout.addStretch(1)
-        remove_layout.addWidget(self.remove_account_button)
-        layout.addLayout(remove_layout)
-
-        layout.addStretch(1)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(scroll)
 
     # ------------------------------------------------------------------
     # Rafraîchissement
@@ -319,31 +437,50 @@ class AccountPanel(QWidget):
         self.next_ping_label.setText(format_timestamp(status.next_ping_at, tz))
         self.last_ping_label.setText(format_timestamp(status.last_ping_at, tz))
         self.ping_count_label.setText(str(status.ping_count))
-        self.quota_status_label.setText(
-            f"session: {status.quota_status_session} | hebdo: {status.quota_status_weekly}"
-        )
-        session_reset_str = (
-            f" (reset {format_timestamp(status.reset_at, tz)})" if status.reset_at else ""
-        )
+
+        def _quota_html(pct_text: str, reset_at, quota_status: str) -> str:
+            reset_str = f" (reset {format_timestamp(reset_at, tz)})" if reset_at else ""
+            color = "#e06c75" if quota_status == "quota atteint" else "#98c379"
+            badge = f" <span style='color:{color};'>● {quota_status}</span>" if quota_status != "—" else ""
+            return f"{pct_text}{reset_str}{badge}"
+
         self.session_quota_label.setText(
-            f"{status.session_pct if status.session_pct is not None else '—'}%{session_reset_str}"
-        )
-        weekly_reset_str = (
-            f" (reset {format_timestamp(status.weekly_reset_at, tz)})" if status.weekly_reset_at else ""
+            _quota_html(
+                f"{status.session_pct}%" if status.session_pct is not None else "—",
+                status.reset_at,
+                status.quota_status_session,
+            )
         )
         self.weekly_quota_label.setText(
-            f"{status.weekly_used if status.weekly_used is not None else '—'}%{weekly_reset_str}"
+            _quota_html(
+                f"{status.weekly_used:.0f}%" if status.weekly_used is not None else "—",
+                status.weekly_reset_at,
+                status.quota_status_weekly,
+            )
         )
         self.cli_status_label.setText(
             f"{status.auth_status} {'(disponible)' if status.cli_available else '(absent)'}"
         )
         self.last_probe_label.setText(format_timestamp(status.last_probe_at, tz))
 
-        self.fallback_checkbox.setChecked(status.fallback_enabled)
-        self.fallback_time_input.setText(status.fallback_time)
-        self.probe_interval_input.setText(str(status.probe_interval_minutes))
-        self.claude_path_input.setText(status.claude_executable)
-        if not self.config_dir_input.hasFocus():
+        # Ne jamais écraser un champ modifié mais pas encore enregistré :
+        # sinon le refresh périodique (toutes les 5s) écrase la saisie avant
+        # même que l'utilisateur ait pu cliquer sur "Enregistrer", ce qui
+        # ressemble à un rollback fantôme de l'UI. `blockSignals` évite que
+        # ce setText/setChecked programmatique ne soit lui-même interprété
+        # comme une modification utilisateur (pour la checkbox, dont le
+        # signal `toggled` ne distingue pas saisie et code).
+        if "fallback_enabled" not in self._dirty_fields:
+            self.fallback_checkbox.blockSignals(True)
+            self.fallback_checkbox.setChecked(status.fallback_enabled)
+            self.fallback_checkbox.blockSignals(False)
+        if "fallback_time" not in self._dirty_fields:
+            self.fallback_time_input.setText(status.fallback_time)
+        if "probe_interval" not in self._dirty_fields:
+            self.probe_interval_input.setText(str(status.probe_interval_minutes))
+        if "claude_path" not in self._dirty_fields:
+            self.claude_path_input.setText(status.claude_executable)
+        if "config_dir" not in self._dirty_fields:
             self.config_dir_input.setText(status.claude_config_dir)
 
     # ------------------------------------------------------------------
@@ -521,6 +658,10 @@ class AccountPanel(QWidget):
         self.service.set_claude_config_dir(config_dir, persist=save_config)
         self.service.set_probe_interval(probe_minutes, persist=save_config)
 
+        # Les champs sont désormais synchronisés avec l'état du service :
+        # plus rien à protéger du prochain refresh périodique.
+        self._dirty_fields.clear()
+
         if save_config:
             self.status_bar_message("Configuration enregistrée.")
             QMessageBox.information(self, "Configuration", "Paramètres sauvegardés avec succès.")
@@ -562,23 +703,6 @@ class AccountPanel(QWidget):
         except ValueError as exc:
             QMessageBox.warning(self, "Erreur", str(exc))
 
-    def _remove_account(self) -> None:
-        reply = QMessageBox.question(
-            self,
-            "Supprimer ce compte",
-            f"Supprimer le compte '{self.service.name}' ?\n\n"
-            "Le scheduler de ce compte sera arrêté et le compte retiré de\n"
-            "config.yaml. Les fichiers d'état/logs existants ne sont pas\n"
-            "supprimés du disque.",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if reply != QMessageBox.Yes:
-            return
-        name = self.service.name
-        self.manager.remove_account(name)
-        self._on_removed(name)
-
 
 class ClaudePingWindow(QMainWindow):
     # Émis depuis le thread d'écoute de l'ActivationServer (pas le thread
@@ -591,12 +715,21 @@ class ClaudePingWindow(QMainWindow):
         super().__init__()
         self.manager = manager
         self.setWindowTitle("ClaudePing")
-        self.setMinimumSize(720, 540)
+        self.setWindowIcon(app_icon())
         self._account_panels: dict[str, AccountPanel] = {}
 
         self._build_ui()
         self._setup_menu()
         self._setup_tray()
+
+        # Le contenu de chaque onglet défile (QScrollArea) : la fenêtre peut
+        # donc descendre sous un plancher raisonnable sans jamais comprimer
+        # ni chevaucher le texte (au pire, une barre de défilement apparaît).
+        self.setMinimumSize(420, 320)
+        # Taille de départ confortable : tout est visible sans défiler pour
+        # un compte dont la section "Configuration Claude CLI" est repliée
+        # (l'état par défaut) — mesurée sur le contenu réel du panneau.
+        self.resize(620, 540)
 
         self.activation_requested.connect(self._on_activation_requested)
         self._activation_server = ActivationServer(base_dir, on_activate=self.activation_requested.emit)
@@ -671,10 +804,28 @@ class ClaudePingWindow(QMainWindow):
         log_tab_layout.addWidget(self.log_view)
 
         self._tabs.addTab(self.log_tab, "Logs")
+        self._tabs.currentChanged.connect(lambda _idx: self._update_remove_button_state())
 
-        add_button = QPushButton("+ Ajouter un compte")
+        # Coin de la barre d'onglets : "Compte :" suivi des deux actions
+        # (ajouter / supprimer l'onglet actuellement affiché), sur une seule
+        # ligne compacte — pas besoin d'aller chercher un bouton par panneau.
+        corner_widget = QWidget()
+        corner_layout = QHBoxLayout(corner_widget)
+        corner_layout.setContentsMargins(4, 2, 4, 2)
+        corner_layout.setSpacing(4)
+        corner_label = QLabel("Compte :")
+        add_button = QPushButton("Ajouter")
+        add_button.setToolTip("Ajouter un nouveau compte Claude")
         add_button.clicked.connect(self._add_account_dialog)
-        self._tabs.setCornerWidget(add_button, Qt.TopRightCorner)
+        self.remove_account_button = QPushButton("Supprimer")
+        self.remove_account_button.setToolTip(
+            "Supprimer le compte de l'onglet actuellement affiché"
+        )
+        self.remove_account_button.clicked.connect(self._remove_current_account)
+        corner_layout.addWidget(corner_label)
+        corner_layout.addWidget(add_button)
+        corner_layout.addWidget(self.remove_account_button)
+        self._tabs.setCornerWidget(corner_widget, Qt.TopRightCorner)
 
         central = QWidget()
         central_layout = QVBoxLayout(central)
@@ -685,8 +836,14 @@ class ClaudePingWindow(QMainWindow):
         self.status_bar = QStatusBar(self)
         self.setStatusBar(self.status_bar)
 
+        self._update_remove_button_state()
+
+    def _update_remove_button_state(self) -> None:
+        current = self._tabs.currentWidget()
+        self.remove_account_button.setEnabled(current in self._account_panels.values())
+
     def _add_account_tab(self, service: AccountService, select: bool = True) -> None:
-        panel = AccountPanel(self.manager, service, on_removed=self._on_account_removed)
+        panel = AccountPanel(self.manager, service)
         self._account_panels[service.name] = panel
         logs_index = self._tabs.indexOf(self.log_tab) if hasattr(self, "log_tab") else -1
         if logs_index == -1:
@@ -696,6 +853,30 @@ class ClaudePingWindow(QMainWindow):
             self._tabs.insertTab(index, panel, service.name)
         if select:
             self._tabs.setCurrentIndex(index)
+        if hasattr(self, "remove_account_button"):
+            self._update_remove_button_state()
+
+    def _remove_current_account(self) -> None:
+        current = self._tabs.currentWidget()
+        name = next(
+            (n for n, p in self._account_panels.items() if p is current), None
+        )
+        if name is None:
+            return
+        reply = QMessageBox.question(
+            self,
+            "Supprimer ce compte",
+            f"Supprimer le compte '{name}' ?\n\n"
+            "Le scheduler de ce compte sera arrêté et le compte retiré de\n"
+            "config.yaml. Les fichiers d'état/logs existants ne sont pas\n"
+            "supprimés du disque.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self.manager.remove_account(name)
+        self._on_account_removed(name)
 
     def _add_account_dialog(self) -> None:
         dialog = AddAccountDialog(self)
@@ -721,13 +902,13 @@ class ClaudePingWindow(QMainWindow):
         if index != -1:
             self._tabs.removeTab(index)
         panel.deleteLater()
+        self._update_remove_button_state()
 
     def _setup_tray(self) -> None:
         if not QSystemTrayIcon.isSystemTrayAvailable():
             return
 
-        icon = self.style().standardIcon(QStyle.SP_DesktopIcon)
-        self.tray_icon = QSystemTrayIcon(icon, parent=self)
+        self.tray_icon = QSystemTrayIcon(app_icon(), parent=self)
         self.tray_icon.setToolTip("ClaudePing")
 
         menu = QMenu(self)
@@ -811,6 +992,14 @@ class ClaudePingWindow(QMainWindow):
 
 def launch_ui(manager: ClaudePingManager, base_dir: Path) -> None:
     app = QApplication(sys.argv)
+    app.setWindowIcon(app_icon())
+    # Sous Wayland/GNOME, l'icône de la barre des tâches/dock est résolue
+    # via le fichier .desktop associé à l'"app-id" de la fenêtre, pas
+    # directement depuis le pixmap fourni ici — setWindowIcon() seul ne
+    # suffit pas. desktopFileName() déclare cet app-id ; encore faut-il
+    # qu'un ~/.local/share/applications/claudeping.desktop (Icon=claudeping)
+    # existe réellement, voir install/install_linux.sh.
+    app.setDesktopFileName("claudeping")
     window = ClaudePingWindow(manager, base_dir)
     window.show()
     app.exec()

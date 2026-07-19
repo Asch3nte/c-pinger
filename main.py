@@ -53,7 +53,7 @@ def _create_default_config(config_path: Path) -> None:
     # Fallback : écrire un template minimal (un compte "default")
     config_path.write_text(
         "accounts:\n"
-        "  - name: default\n"
+        "  - name: DEFAULT\n"
         "    claude_config_dir: ''\n"
         "    claude_executable: claude\n"
         "    probe:\n"

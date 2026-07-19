@@ -17,7 +17,7 @@
 # qui applique automatiquement le bon CLAUDE_CONFIG_DIR).
 
 accounts:
-  - name: "perso"
+  - name: "DEFAULT"
     # Vide = config Claude par défaut du poste (~/.claude)
     claude_config_dir: ""
     # Chemin vers l'exécutable Claude Code CLI (optionnel).
@@ -53,7 +53,7 @@ accounts:
       on_error: false
 
   # Second exemple de compte : dossier de config Claude isolé, pour faire
-  # tourner un compte "pro" en parallèle du compte "perso" ci-dessus.
+  # tourner un compte "pro" en parallèle du compte "DEFAULT" ci-dessus.
   # - name: "pro"
   #   claude_config_dir: "~/.claude-pro"
   #   claude_executable: "claude"

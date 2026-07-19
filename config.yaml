@@ -5,7 +5,7 @@
 # ============================================================
 
 accounts:
-  - name: "default"
+  - name: "DEFAULT"
     claude_config_dir: ""
     claude_executable: "claude"
     probe:

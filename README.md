@@ -46,19 +46,22 @@ Probe toutes les 30 min
 
 ## Installation rapide (exécutable standalone)
 
+Les binaires prêts à l'emploi sont versionnés dans le dépôt, sous `dist/`.
+
 ### Linux
 
 ```bash
-# Télécharger et rendre exécutable
+git clone https://github.com/Asch3nte/c-pinger.git claudeping
+cd claudeping/dist/linux
 chmod +x claudeping
 ./claudeping --ui        # Interface graphique
-./claudeping             # Mode service (background)
+./claudeping              # Mode service (background)
 ```
 
 ### Windows
 
 ```
-Double-cliquer sur ClaudePing.exe
+Télécharger dist\windows\ClaudePing.exe puis double-cliquer dessus.
 ```
 
 L'application crée automatiquement un `config.yaml` dans le même dossier au premier lancement.
@@ -119,21 +122,38 @@ PowerShell -ExecutionPolicy Bypass -File install\install_windows.ps1
 python main.py --ui        # ou double-clic sur l'exécutable
 ```
 
-L'interface affiche :
-- **Un onglet par compte Claude** : état du service, prochain ping, quotas session/hebdo, et tous les paramètres configurables pour ce compte
-- **Onglet Logs** : logs en temps réel de tous les comptes (préfixés `[nom_compte]`), sans avoir à surveiller le terminal
-- **"+ Ajouter un compte"** (coin de la barre d'onglets) : voir [Plusieurs comptes Claude en parallèle](#plusieurs-comptes-claude-en-parallèle)
+L'interface tient dans une fenêtre compacte (≈560×460 px), organisée pour
+rester lisible d'un coup d'œil :
 
-Paramètres configurables par compte depuis l'UI :
+- **Un onglet par compte Claude**, chacun structuré en quatre blocs :
+  - **État** : statut du service, état CLI, prochain/dernier ping, total de
+    pings, dernière probe, et quotas session/hebdo (le % affiche directement
+    `● ok` en vert ou `● quota atteint` en rouge, pas besoin de faire le calcul).
+  - **Réglages** : intervalle de probe et fallback horaire — les deux
+    réglages qu'on ajuste le plus souvent, toujours visibles.
+  - **Configuration Claude CLI** *(repliée par défaut)* : exécutable CLI,
+    dossier de config isolé, connexion/déconnexion — regroupé et masqué
+    tant qu'on n'en a pas besoin, pour ne pas alourdir la fenêtre.
+  - **Ping manuel ponctuel** : programme un ping unique à une heure précise.
+- **Onglet Logs** : logs en temps réel de tous les comptes (préfixés `[nom_compte]`), sans avoir à surveiller le terminal
+- **Coin supérieur droit de la barre d'onglets** : **"+ Ajouter un compte"**
+  et, juste en dessous, **"🗑 Supprimer ce compte"** (agit sur l'onglet compte
+  actuellement affiché ; désactivé sur l'onglet Logs) — voir
+  [Plusieurs comptes Claude en parallèle](#plusieurs-comptes-claude-en-parallèle)
+
+Un champ modifié mais pas encore enregistré n'est **jamais écrasé** par le
+rafraîchissement automatique (toutes les 5s) tant que "Enregistrer la
+configuration" n'a pas été cliqué — et valider un champ avec **Entrée**
+sauvegarde immédiatement, comme cliquer sur ce bouton.
+
+Réglages disponibles par compte :
 - **Probe quota toutes les N min** : fréquence d'interrogation de `claude /usage`
-- **Activer le fallback horaire** : ping de secours à heure fixe si la détection automatique échoue
-- **Heure de fallback (HH:MM)** : heure du ping de secours quotidien
-- **Claude CLI (exécutable)** : chemin vers le binaire `claude` si absent du PATH
-- **Dossier de config Claude** : dossier d'identifiants isolé pour ce compte (vide = config par défaut du poste), avec bouton **Ouvrir dossier de config**
+- **Activer le fallback horaire** / **Heure (HH:MM)** : ping de secours à heure fixe si la détection automatique échoue
+- **Exécutable CLI** : chemin vers le binaire `claude` si absent du PATH
+- **Dossier de config** : dossier d'identifiants isolé pour ce compte (vide = config par défaut du poste), avec bouton **Ouvrir**
 - **Se connecter / Se déconnecter** : lance `claude auth login` / `claude auth logout` pour ce compte
 - **Ping immédiat** : force un ping maintenant
 - **Ping manuel ponctuel (HH:MM)** : programme un ping unique à une heure précise
-- **Supprimer ce compte** : arrête et retire ce compte
 
 ### Mode service (ligne de commande)
 
@@ -176,13 +196,14 @@ qu'utilise ClaudePing pour chaque compte que vous ajoutez.
   **"Ouvrir dossier de config"** : ouvre ce dossier dans l'explorateur de
   fichiers du système (Nautilus/Explorer/Finder…), pour inspecter ou
   gérer manuellement les fichiers du compte (identifiants, historique…).
-- Bouton **"Se connecter"** du panneau d'un compte : lance
+- Bouton **"Se connecter"** (dans "Configuration Claude CLI") : lance
   `claude auth login` avec le `CLAUDE_CONFIG_DIR` de ce compte — la
   fenêtre de connexion navigateur authentifie bien ce compte-là, pas le
   compte par défaut du poste.
-- Bouton **"Supprimer ce compte"** : arrête son scheduler et le retire de
-  `config.yaml` (les fichiers d'état/logs existants ne sont pas
-  supprimés du disque).
+- Bouton **"🗑 Supprimer ce compte"** (coin de la barre d'onglets, sous
+  "+ Ajouter un compte") : arrête le scheduler du compte actuellement
+  affiché et le retire de `config.yaml` (les fichiers d'état/logs
+  existants ne sont pas supprimés du disque).
 
 ### Depuis `config.yaml`
 
@@ -191,7 +212,7 @@ complète. En résumé, `accounts` est une liste, un item = un compte :
 
 ```yaml
 accounts:
-  - name: "perso"
+  - name: "DEFAULT"
     claude_config_dir: ""              # vide = config Claude par défaut du poste
     claude_executable: "claude"
     probe: { interval_minutes: 30, model: haiku, message: "reply with just: ok" }
@@ -229,7 +250,7 @@ qu'au premier enregistrement des réglages depuis l'UI.
 
 ```yaml
 accounts:
-  - name: default
+  - name: DEFAULT
     claude_config_dir: ""     # vide = config Claude par défaut du poste
     claude_executable: claude # Chemin complet si 'claude' n'est pas dans le PATH
     probe:
@@ -308,7 +329,7 @@ Nécessite Python 3.10+ et les dépendances installées dans un venv.
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt pyinstaller
 pyinstaller claudeping_linux.spec --distpath dist/linux
-# → dist/linux/claudeping  (~66 MB, autonome)
+# → dist/linux/claudeping  (~66 MB, autonome, icône assets/icon.png embarquée)
 ```
 
 ### Windows (à exécuter sur Windows)
@@ -317,7 +338,7 @@ pyinstaller claudeping_linux.spec --distpath dist/linux
 python -m venv .venv; .venv\Scripts\activate
 pip install -r requirements.txt pyinstaller
 pyinstaller claudeping_windows.spec --distpath dist\windows
-# → dist\windows\ClaudePing.exe  (~70 MB, autonome, sans console)
+# → dist\windows\ClaudePing.exe  (~70 MB, autonome, sans console, icône assets/icon.ico)
 ```
 
 ## Instance unique
