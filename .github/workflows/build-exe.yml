@@ -31,20 +31,17 @@ jobs:
           pip install pyinstaller
 
       - name: Build de l'EXE
-        run: >
-          pyinstaller
-          --onefile
-          --name claudeping
-          --hidden-import plyer.platforms.win.notification
-          --hidden-import zoneinfo
-          --hidden-import tzdata
-          main.py
+        # Utilise le .spec maintenu dans le dépôt (pas des flags dupliqués
+        # ici) : c'est lui qui embarque assets/ (icône) et fixe l'icône de
+        # l'exécutable. Toute divergence entre les deux produirait un build
+        # CI sans icône, différent du build local.
+        run: pyinstaller claudeping_windows.spec --distpath dist
 
       - name: Upload de l'artefact
         uses: actions/upload-artifact@v4
         with:
           name: claudeping-windows
-          path: dist/claudeping.exe
+          path: dist/ClaudePing.exe
           retention-days: 30
 
       # Cette étape ne s'exécute que si le workflow a été déclenché par un tag v*
@@ -56,4 +53,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/claudeping.exe
+          files: dist/ClaudePing.exe
